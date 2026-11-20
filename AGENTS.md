@@ -1,24 +1,26 @@
 # AGENTS.md: Đảo Đèn Lồng
 
-Game 3D (Three.js trên web) + chế độ headless theo Test Contract v1.0. Node >= 18, không có dependency npm.
+Game 3D (Three.js trên web) và chế độ headless theo Test Contract v1.1. Node >= 18, không có dependency npm.
 
 ## Lệnh
 - Chơi: `npm start` rồi mở http://localhost:5173
 - Test: `npm test` (node:test, gồm unit + CLI). Phải xanh trước khi kết thúc việc.
-- Bằng chứng: `npm run proof` chạy `tests/scenarios/*.json` qua headless, ghi `docs/proof/<phase>/`
-- Contract: sửa số trong `src/core/config.js` rồi `npm run contract` (sinh lại `game.contract.json`)
-- Headless: `node src/headless/cli.js --seed 1 --night 1 --ticks 600 --out out.jsonl`
+- Bằng chứng: `npm run proof` chạy `tests/scenarios/*.json` qua headless, ghi `docs/proof/<phase>/` (`PHASE=phase-2 npm run proof`; PowerShell: `$env:PHASE='phase-2'; npm run proof`).
+- Contract: sửa số trong `src/core/config.js` rồi `npm run contract` (sinh lại `game.contract.json`).
+- Headless: `node src/headless/cli.js --seed 1 --night 1 --ticks 600 --out out.jsonl`; `--night` nhận 1, 2 hoặc 3.
 
 ## Kiến trúc
 - `src/core/`: luật chơi thuần, tất định. Không DOM, không I/O, không `Math.random`/`Date.now` (có test chặn).
-- `src/headless/`: CLI + kiểm tra định dạng (sai định dạng -> mã thoát 2).
+- `src/headless/`: CLI + kiểm tra định dạng; sai định dạng trả mã thoát 2.
 - `web/`: chỉ hiển thị + đọc phím, gọi `Game.step()` 60 lần/giây. Không đặt luật chơi ở đây.
+- Tuning gameplay và hình học ba bản đồ chỉ khai báo tại `src/core/config.js`; `game.contract.json` được sinh từ cấu hình.
 
 ## Quy tắc
-- Yêu cầu gốc: tab của phase trên lab board; giả định ghi ở `docs/notes/phase-N-assumptions.md`. Không bịa yêu cầu.
-  Chỗ mơ hồ: thêm giả định vào file đó trước khi code.
-- Mọi con số gameplay chỉ nằm trong `src/core/config.js`. `tuning` trong contract phải khớp số đang dùng.
+- Yêu cầu gốc: ticket của phase trên lab board hoặc nội dung người dùng cung cấp; giả định phải ghi ở `docs/notes/phase-N-assumptions.md` trước khi code. Không bịa yêu cầu.
 - Tính năng mới: viết test/scenario trước, rồi code. Không viết test luôn đạt, không sửa tay output trong `docs/proof`.
 - Sáng tạo thêm chỉ ở `web/` (hiển thị) để không đổi output headless.
 - Đổi luật cũ theo ticket mới: sửa/bỏ test cũ kèm lý do trong `docs/notes/`.
-- Review thay đổi bằng subagent `reviewer` (`.claude/agents/reviewer.md`), không tự chấm việc mình viết.
+- Snapshot v1.1 gồm `night`, `wind`, dữ liệu người chơi, `motes`, `drifters`, `charms`; giữ event tick k+1, snapshot tick 0, dòng end cuối và định dạng contract.
+- Với phase có giao diện: chụp và kiểm tra ảnh vào `docs/proof/<phase>/screens/`; ghi yêu cầu chưa đo được là chưa đạt, không suy diễn bằng chứng.
+- Chạy `npm test` và `PHASE=phase-N npm run proof`; với Phase 2 đo đủ ba đêm, tối đa 21.600 tick, dưới 30 giây. Kiểm tra bản web đạt ít nhất 30 FPS trung bình ở 1280×720.
+- Review thay đổi bằng subagent `reviewer` (`.claude/agents/reviewer.md`) trước khi gắn tag; không tự chấm việc mình viết.

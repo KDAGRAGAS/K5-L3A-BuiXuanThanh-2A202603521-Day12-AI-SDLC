@@ -1,5 +1,5 @@
 {
-  "requirement": "Bóng Mực chạm: mất 1 lửa, rơi floor(5*0.5)=2 đom đóm",
+  "requirement": "Bóng Mực chạm: mất 1 lửa, rơi floor(5/2)=2 đom đóm thành mote rơi TTL 480 tick",
   "seed": 1,
   "ticks": 1,
   "scenario": {

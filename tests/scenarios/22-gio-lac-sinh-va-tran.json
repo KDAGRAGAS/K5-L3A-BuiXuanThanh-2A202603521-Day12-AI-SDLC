@@ -1,0 +1,28 @@
+{
+  "requirement": "Gió Lạc sinh lần lượt ở tick 1200 và 2400; sau khi đủ hai con, lượt tick 3600 bị bỏ qua vì chạm giới hạn",
+  "night": 2,
+  "seed": 22,
+  "ticks": 3600,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": true,
+    "motes": [],
+    "shades": [],
+    "drifters": []
+  },
+  "inputs": { "frames": [] },
+  "expect": {
+    "events": [],
+    "snapshots": [
+      [1199, "drifters.length", 0],
+      [1200, "drifters.length", 1],
+      [2399, "drifters.length", 1],
+      [2400, "drifters.length", 2],
+      [3600, "drifters.length", 2],
+      [3600, "drifters.0.id", "D1"],
+      [3600, "drifters.1.id", "D2"]
+    ]
+  },
+  "snapshot_every": 1
+}

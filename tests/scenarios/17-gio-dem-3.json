@@ -1,0 +1,13 @@
+{
+  "requirement": "Gió Đêm 3 được báo trước, hoạt động theo chu kỳ 30 giây, có hướng tất định theo seed",
+  "night": 3,
+  "seed": 17,
+  "ticks": 1800,
+  "scenario": { "random_motes": false, "random_shades": false, "motes": [], "shades": [], "random_drifters": false },
+  "inputs": { "frames": [] },
+  "expect": {
+    "events": [],
+    "snapshot_fields": { "night": 3, "wind.active": true, "sim_tick": 1800 }
+  },
+  "snapshot_every": 1800
+}

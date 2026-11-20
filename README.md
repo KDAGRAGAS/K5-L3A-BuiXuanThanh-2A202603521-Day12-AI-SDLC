@@ -3,86 +3,77 @@
 > **Video demo:** _(sẽ thêm ở Phase 4)_ · Lab Day 12 AI SDLC · Bùi Xuân Thành · 2A202603521
 > Tài liệu gốc của lab: [docs/lab/LAB_README.md](docs/lab/LAB_README.md), [GUIDE](GUIDE.md), [RUBRIC](RUBRIC.md), [SUBMISSION](SUBMISSION.md)
 
-Game 3D góc nhìn thứ ba. Mây, người giữ đèn nhỏ tuổi đội nón lá, chạy khắp Đảo Bến gom đom đóm để thắp lại 5 Đèn Lồng Lớn trước bình minh và né Bóng Mực trong sương đen.
+Game 3D góc nhìn thứ ba. Mây, người giữ đèn nhỏ tuổi đội nón lá, đi qua ba hòn đảo trên mây, gom đom đóm, thắp lại những chiếc đèn lồng trước bình minh và né Bóng Mực cùng Gió Lạc.
 
-## Cài đặt và chạy (cần Node.js ≥ 18, chạy được trên macOS, Linux, Windows)
+## Cài đặt và chạy
+
+Yêu cầu Node.js ≥ 18. Không cần cài dependency.
 
 ```bash
-git clone <link-repo> dao-den-long && cd dao-den-long
-npm install        # không có dependency, bước này chỉ để đủ build_cmd
 npm start          # mở http://localhost:5173
+npm test           # unit test và CLI
+npm run proof      # scenario headless, ghi docs/proof/phase-1/
+npm run contract   # sinh game.contract.json từ src/core/config.js
 ```
+
+Để sinh bằng chứng Phase 2: PowerShell dùng `$env:PHASE='phase-2'; npm run proof`; macOS/Linux dùng `PHASE=phase-2 npm run proof`.
 
 ## Điều khiển
 
 | Phím | Việc |
 |---|---|
-| W A S D / ↑ ↓ | Di chuyển (theo hướng camera) |
+| W A S D / ↑ ↓ | Di chuyển theo hướng camera |
 | Kéo chuột / ← → | Xoay camera |
 | Space | Nhảy |
-| E | Nạp đom đóm vào Đèn Lồng Lớn ở gần |
-| Q | Tỏa sáng: tốn 1 đom đóm, làm choáng và đẩy lùi Bóng Mực trong 6 m |
-| R | Chơi lại |
+| Shift | Lướt |
+| E | Nạp đom đóm vào đèn ở gần |
+| Q | Tỏa sáng: tốn 3 đom đóm, làm choáng Bóng Mực và tác động tới Gió Lạc |
+| Esc / P | Tạm dừng |
 
-## Luật và cách tính điểm (Đêm 1)
+## Hành trình ba đêm
 
-- Đom đóm tự được nhặt khi đi qua (mang tối đa 10). Mỗi đèn cần 5 đom đóm. Thắp đủ 5 đèn thì **thắng**.
-- Bóng Mực chạm thì mất 1 lửa (có 3 lửa), rơi một nửa số đom đóm đang mang, rồi được bất tử 2 giây. Hết lửa thì **thua**. Hết 5 phút đêm (bình minh) mà chưa thắp đủ cũng **thua**.
-- Bóng Mực không vào được vùng 6 m quanh đèn đã thắp.
-- **Điểm:**
-  - +10 cho mỗi đom đóm nhặt.
-  - +100 cho mỗi đèn thắp.
-  - +5 cho mỗi Bóng Mực bị choáng.
-  - Khi thắng, cộng thêm 2 điểm cho mỗi giây đêm còn lại và 50 điểm cho mỗi lửa còn lại.
+- **Đêm 1 — Đảo Bến:** năm đèn, đảo tròn bán kính 40 m.
+- **Đêm 2 — Đảo Cau:** hai đảo nối bằng cầu tre và hai bục phóng; Gió Lạc xuất hiện.
+- **Đêm 3 — Đảo Chuông:** ba tầng, dốc, bục phóng và những cơn gió; Gió Lạc tiếp tục xuất hiện.
 
-Mọi con số nằm trong [`src/core/config.js`](src/core/config.js) và được khai báo trong [`game.contract.json`](game.contract.json). Giả định cho chỗ PRD-0 để mơ hồ: [docs/notes/phase-1-assumptions.md](docs/notes/phase-1-assumptions.md).
+Mỗi đèn cần 10 đom đóm; Mây mang tối đa 10. Bóng Mực chạm làm mất một Ngọn Lửa và khiến Mây rơi một nửa số đom đóm đang mang. Hết lửa thì thua ngay; nếu trời sáng trước khi thắp hết đèn thì thua. Thắng một đêm sẽ cộng điểm và mở đêm kế tiếp. Thắng đêm thứ ba hiện tổng điểm của các đêm đã thắng.
 
-## Test và chế độ headless (Test Contract v1.0)
+Toàn bộ tuning và hình học bản đồ được khai báo trong [`src/core/config.js`](src/core/config.js), sinh ra [`game.contract.json`](game.contract.json). Giả định Phase 2 nằm trong [`docs/notes/phase-2-assumptions.md`](docs/notes/phase-2-assumptions.md).
+
+## Test Contract v1.1 và headless
 
 ```bash
-npm test                 # 25 test: luật chơi + CLI + tính tất định
-npm run proof            # chạy scenario trong tests/scenarios, ghi docs/proof/phase-1/RESULTS.md
+npm test
 node src/headless/cli.js --seed 1 --night 1 --ticks 600 --out out.jsonl \
-     [--scenario s.json] [--inputs i.json] [--snapshot-every 10]
+     [--scenario scenario.json] [--inputs inputs.json] [--snapshot-every 10]
 ```
 
-- Chạy 60 tick/giây cố định, không cửa sổ, không cần GPU. Một đêm 5 phút chạy trong khoảng 60 ms.
-- Mã thoát: 0 khi chạy xong; 2 khi file inputs/scenario sai định dạng; 1 khi thiếu tham số, không đọc được file, hoặc `--night` khác 1.
-- `tuning` không có trường nào là `null`: game có đủ mọi khái niệm trong contract. `fall_enabled = false` vì mép đảo là tường vô hình.
+CLI nhận `--night 1`, `--night 2` hoặc `--night 3`. Một đêm đầy đủ có tối đa 21.600 tick. Snapshot giữ mốc tick 0, event ghi tick k+1 và output kết thúc bằng dòng `end`. Mã thoát 2 báo file scenario/input sai định dạng.
 
-## Cấu trúc
+## Cấu trúc và harness
 
 ```text
-src/core/        luật chơi thuần, tất định (dùng chung cho web và headless)
-src/headless/    CLI theo Test Contract + kiểm tra định dạng
-web/             hiển thị Three.js (web/vendor: three.js r170, MIT)
-tests/           unit test, test CLI, tests/scenarios/*.json (scenario bằng chứng)
-scripts/         serve, proof, gen-contract, check (hook)
+src/core/        luật chơi thuần, tất định
+src/headless/    CLI theo Test Contract v1.1 và kiểm tra định dạng
+web/             Three.js: hiển thị, âm thanh, menu và đọc phím
+tests/           unit test, test CLI, tests/scenarios/*.json
+scripts/         serve, proof, gen-contract, check
 docs/notes/      giả định, nhật ký AI, đánh giá
 docs/proof/      bằng chứng từng phase
-AGENTS.md, CLAUDE.md, .claude/   harness AI (hook Stop, skill verify-game, subagent reviewer)
+AGENTS.md, .claude/  hướng dẫn agent, verify-game và reviewer
 ```
 
-## Harness AI
+- [`AGENTS.md`](AGENTS.md): kiến trúc, lệnh và quy tắc phát triển.
+- [Skill `verify-game`](.claude/skills/verify-game/SKILL.md): test, scenario, proof và kiểm tra giao diện.
+- [Subagent `reviewer`](.claude/agents/reviewer.md): review chỉ đọc trước khi gắn tag phase.
+- CI chạy `npm test` và `npm run proof` trên Ubuntu/macOS khi push.
 
-- [`AGENTS.md`](AGENTS.md): lệnh build/test, kiến trúc, quy tắc. `CLAUDE.md` trỏ tới file này.
-- **Hook Stop** (`.claude/settings.json` → `scripts/check.mjs`): chặn agent kết thúc khi `npm test` đang đỏ.
-- **Skill** `.claude/skills/verify-game`: quy trình thêm scenario và sinh bằng chứng. Dùng sau khi sửa luật chơi và trước khi gắn tag.
-- **Subagent** `.claude/agents/reviewer.md`: review độc lập, chỉ đọc, đối chiếu với yêu cầu và contract.
-- **CI** `.github/workflows/ci.yml`: chạy `npm test` và `npm run proof` trên Ubuntu và macOS mỗi lần push.
+## Sáng tạo từ Phase 1
 
-## Sáng tạo của tôi
-
-Các phần dưới đây chỉ thay đổi hiển thị trong `web/`, không đổi output headless. Bằng chứng: `npm run proof` vẫn ra cùng sha256.
-
-- Đom đóm Mây đang mang **bay vòng quanh cô bé**, nhìn là biết đang mang bao nhiêu.
-- **Đảo sáng dần** theo số đèn đã thắp: nền trời chuyển từ tím đen sang tím ấm, cỏ xanh lên.
-- **Vòng sáng** dưới chân mỗi đèn đã thắp, đánh dấu vùng an toàn mà Bóng Mực không vào được.
-
-Ảnh: [docs/proof/phase-1/screens](docs/proof/phase-1/screens).
+Mây có các đom đóm bay vòng quanh; đảo sáng dần theo tiến độ và đèn sáng tạo vòng vùng an toàn. Các phần này chỉ thay đổi hiển thị và vẫn giữ output headless Phase 1. Bằng chứng Phase 1: [docs/proof/phase-1/](docs/proof/phase-1/).
 
 ## Ghi chép
 
-- Bằng chứng: [docs/proof/phase-1/README.md](docs/proof/phase-1/README.md)
-- Nhật ký dùng AI và token: [docs/notes/ai-log.md](docs/notes/ai-log.md)
-- Đánh giá từng phase: [docs/notes/evaluation.md](docs/notes/evaluation.md)
+- [Bằng chứng Phase 2](docs/proof/phase-2/README.md)
+- [Nhật ký dùng AI](docs/notes/ai-log.md)
+- [Đánh giá từng phase](docs/notes/evaluation.md)

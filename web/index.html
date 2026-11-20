@@ -2,42 +2,281 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0E1430" />
   <title>Đảo Đèn Lồng</title>
   <style>
-    html, body { margin: 0; height: 100%; overflow: hidden; background: #120b22; font-family: system-ui, sans-serif; color: #fde9c4; }
-    canvas { display: block; }
-    #hud { position: fixed; top: 12px; left: 12px; display: flex; gap: 10px; flex-wrap: wrap; pointer-events: none; }
-    .chip { background: rgba(20, 10, 40, .72); border: 1px solid rgba(255, 190, 110, .35); border-radius: 10px; padding: 6px 12px; font-size: 15px; }
-    .chip b { color: #ffc070; }
-    #hint { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 14px; opacity: .85; background: rgba(20,10,40,.6); padding: 6px 12px; border-radius: 10px; pointer-events: none; }
-    #prompt { position: fixed; top: 64%; left: 50%; transform: translateX(-50%); font-size: 18px; color: #ffd28a; text-shadow: 0 0 8px #000; pointer-events: none; }
-    #overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(10, 5, 25, .7); text-align: center; }
-    #overlay h1 { font-size: 46px; margin: 0 0 8px; color: #ffc070; }
-    #overlay p { font-size: 18px; margin: 4px; }
-    #start { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; background: rgba(10,5,25,.82); text-align: center; cursor: pointer; }
-    #start h1 { font-size: 52px; margin: 0; color: #ffc070; }
-    #start p { max-width: 560px; line-height: 1.5; }
+    :root {
+      color-scheme: dark;
+      --sky: #0E1430;
+      --mist: #1B2350;
+      --grass: #2F5D50;
+      --sand: #C9B48A;
+      --wood: #6B4A2F;
+      --cloud-sea: #12384A;
+      --lamp: #FFB347;
+      --lamp-core: #FFE9B0;
+      --lamp-off: #5B5F6E;
+      --mote-core: #FFF6C2;
+      --mote-glow: #FFE58A;
+      --shade: #120A1A;
+      --shade-edge: #7A3CFF;
+      --shade-stun: #3A3450;
+      --may-cloth: #E8E2D0;
+      --scarf: #C8102E;
+      --gold: #F2C14E;
+      --drifter: #8FA3B8;
+      --danger: #FF5A5F;
+      --ink: #F5F1E6;
+      --panel: rgba(14, 20, 48, .88);
+      --edge: rgba(242, 193, 78, .38);
+      --focus: #FFE9B0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--sky); color: var(--ink); }
+    body { min-height: 320px; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    #hud { position: fixed; inset: 0 0 auto; z-index: 2; display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 12px; padding: max(14px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 0 max(18px, env(safe-area-inset-left)); pointer-events: none; }
+    .hud-group { display: flex; align-items: center; gap: 8px; }
+    .hud-right { justify-content: flex-end; }
+    .hud-chip { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 7px 13px; border: 1px solid var(--edge); border-radius: 12px; background: rgba(14, 20, 48, .78); box-shadow: 0 8px 28px rgba(0,0,0,.22); backdrop-filter: blur(8px); font-size: 13px; letter-spacing: .03em; }
+    .hud-chip strong { color: var(--lamp-core); font-variant-numeric: tabular-nums; font-size: 15px; }
+    .hud-label { color: rgba(245,241,230,.72); font-size: 10px; text-transform: uppercase; letter-spacing: .14em; }
+    #timerChip { min-width: 112px; justify-content: center; flex-direction: column; gap: 0; border-color: rgba(255,233,176,.55); }
+    #time { font-size: 23px; line-height: 1.1; color: var(--lamp-core); font-variant-numeric: tabular-nums; }
+    #timerChip.alarm { border-color: var(--danger); color: var(--danger); animation: timer-blink 1s steps(2, start) infinite; }
+    #timerChip.alarm #time { color: var(--danger); }
+    @keyframes timer-blink { to { opacity: .52; } }
+    #flames { display: flex; gap: 4px; align-items: center; }
+    .flame { width: 16px; height: 20px; color: var(--lamp); opacity: .28; }
+    .flame.on { opacity: 1; filter: drop-shadow(0 0 6px rgba(255,179,71,.6)); }
+    #targetArrow { position: fixed; z-index: 2; display: none; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px; align-items: center; justify-content: center; color: var(--gold); filter: drop-shadow(0 2px 8px #000); pointer-events: none; transform-origin: center; }
+    #targetArrow svg { width: 42px; height: 42px; }
+    #prompt { position: fixed; z-index: 2; left: 50%; bottom: 116px; transform: translateX(-50%); display: none; max-width: min(90vw, 520px); padding: 11px 18px; border: 1px solid rgba(242,193,78,.65); border-radius: 10px; background: rgba(14,20,48,.9); color: var(--lamp-core); text-align: center; font-size: 15px; box-shadow: 0 8px 26px #0005; pointer-events: none; }
+    #bottomHud { position: fixed; z-index: 2; inset: auto 0 max(16px, env(safe-area-inset-bottom)); display: flex; align-items: flex-end; justify-content: center; gap: 24px; padding: 0 18px; pointer-events: none; }
+    .mote-meter { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .meter-label { color: var(--ink); font-size: 10px; text-transform: uppercase; letter-spacing: .16em; text-shadow: 0 1px 8px #000; }
+    #moteCells { display: flex; gap: 5px; padding: 9px 12px; border: 1px solid rgba(255,229,138,.4); border-radius: 10px; background: rgba(14,20,48,.75); backdrop-filter: blur(8px); }
+    .mote-cell { width: 16px; height: 22px; border: 1px solid rgba(255,246,194,.55); border-radius: 5px 5px 7px 7px; background: rgba(255,246,194,.08); }
+    .mote-cell.on { border-color: var(--mote-core); background: radial-gradient(ellipse at 50% 35%, var(--mote-core), var(--mote-glow) 55%, rgba(255,229,138,.3)); box-shadow: 0 0 11px rgba(255,229,138,.62); }
+    #cooldowns { display: flex; gap: 8px; }
+    .cooldown { display: grid; grid-template-columns: 30px auto; align-items: center; gap: 8px; min-width: 126px; min-height: 48px; padding: 6px 10px; border: 1px solid rgba(242,193,78,.35); border-radius: 10px; background: rgba(14,20,48,.78); backdrop-filter: blur(8px); }
+    .cooldown svg { width: 24px; height: 24px; color: var(--lamp); }
+    .cooldown strong { display: block; font-size: 12px; color: var(--ink); }
+    .cooldown small { display: block; color: rgba(245,241,230,.7); font-size: 10px; }
+    #hint { position: fixed; z-index: 2; right: 18px; bottom: 86px; max-width: 280px; color: rgba(245,241,230,.72); font-size: 11px; line-height: 1.55; text-align: right; text-shadow: 0 1px 5px #000; pointer-events: none; }
+    #fps { position: fixed; z-index: 2; left: 12px; bottom: 10px; color: rgba(245,241,230,.65); font: 11px ui-monospace, monospace; pointer-events: none; }
+    #touchControls { display: none; position: fixed; z-index: 3; inset: auto 12px max(12px, env(safe-area-inset-bottom)); justify-content: space-between; align-items: flex-end; pointer-events: none; }
+    .touch-pad { display: grid; grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(2, 42px); gap: 5px; pointer-events: auto; }
+    .touch-actions { display: grid; grid-template-columns: repeat(2, 48px); gap: 6px; pointer-events: auto; }
+    .touch-key { border: 1px solid #f2c14e77; border-radius: 12px; background: #0e1430c9; color: var(--ink); font-weight: 700; touch-action: none; user-select: none; }
+    .touch-key:active { background: #6b4a2f; }
+    .touch-up { grid-column: 2; }.touch-left { grid-column: 1; grid-row: 2; }.touch-down { grid-column: 2; grid-row: 2; }.touch-right { grid-column: 3; grid-row: 2; }
+
+    #screen { position: fixed; z-index: 5; inset: 0; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(7, 10, 28, .68); backdrop-filter: blur(7px); overflow-y: auto; }
+    #screen.visible { display: flex; }
+    .panel { width: min(100%, 560px); padding: clamp(24px, 5vw, 42px); border: 1px solid rgba(242,193,78,.55); border-radius: 22px; background: linear-gradient(145deg, rgba(27,35,80,.97), rgba(14,20,48,.98) 72%); box-shadow: 0 24px 90px rgba(0,0,0,.52), inset 0 1px rgba(255,255,255,.05); text-align: center; }
+    .panel[hidden] { display: none; }
+    .eyebrow { margin: 0 0 10px; color: var(--gold); font-size: 11px; font-weight: 750; letter-spacing: .23em; text-transform: uppercase; }
+    .panel h1 { margin: 0; color: var(--lamp-core); font-family: "Segoe UI", system-ui, sans-serif; font-size: clamp(36px, 6vw, 58px); font-weight: 750; line-height: 1.05; letter-spacing: -.025em; text-shadow: 0 0 26px rgba(255,179,71,.16); }
+    .panel h2 { margin: 0 0 12px; color: var(--lamp-core); font-family: "Segoe UI", system-ui, sans-serif; font-size: clamp(30px, 5vw, 44px); font-weight: 750; letter-spacing: -.025em; }
+    .panel p { max-width: 440px; margin: 14px auto 22px; color: rgba(245,241,230,.88); font-size: 15px; line-height: 1.65; }
+    .panel .story { padding: 14px 18px; border-left: 2px solid var(--gold); background: rgba(14,20,48,.55); color: var(--sand); text-align: left; font-family: Georgia, serif; font-style: italic; }
+    .actions { display: grid; gap: 10px; margin: 24px auto 0; width: min(100%, 360px); }
+    .action { min-height: 48px; padding: 12px 18px; border: 1px solid rgba(242,193,78,.5); border-radius: 12px; background: rgba(18,56,74,.64); color: var(--ink); font-weight: 700; letter-spacing: .02em; transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease; }
+    .action:hover { border-color: var(--gold); background: rgba(107,74,47,.72); }
+    .action:active { transform: scale(.985); }
+    .action.primary { border-color: var(--lamp); background: var(--lamp); color: #241a19; }
+    .action.primary:hover { background: var(--lamp-core); }
+    .action.subtle { border-color: transparent; background: transparent; color: rgba(245,241,230,.78); }
+    .settings { display: grid; gap: 18px; margin: 24px 0; text-align: left; }
+    .setting { display: grid; gap: 8px; color: var(--ink); font-size: 14px; }
+    .setting span { display: flex; justify-content: space-between; align-items: baseline; }
+    .setting output { color: var(--lamp-core); font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; accent-color: var(--lamp); }
+    .setting-note { margin: 0!important; color: rgba(245,241,230,.68)!important; font-size: 12px!important; }
+    .result-score { display: flex; justify-content: center; gap: 24px; margin: 22px 0; }
+    .result-score div { display: grid; gap: 5px; min-width: 110px; }
+    .result-score strong { color: var(--lamp-core); font-size: 25px; font-variant-numeric: tabular-nums; }
+    .result-score small { color: rgba(245,241,230,.7); font-size: 10px; text-transform: uppercase; letter-spacing: .14em; }
+    #toast { position: fixed; z-index: 4; top: 88px; left: 50%; transform: translateX(-50%); padding: 10px 16px; border: 1px solid var(--edge); border-radius: 12px; background: var(--panel); color: var(--lamp-core); opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
+    #toast.show { opacity: 1; }
+    #windCue { position: fixed; z-index: 2; top: 77px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid rgba(143,163,184,.65); border-radius: 999px; background: rgba(14,20,48,.88); color: #d3dce8; font-size: 12px; letter-spacing: .04em; box-shadow: 0 0 24px rgba(143,163,184,.18); pointer-events: none; }
+    .wind-leaf { display: inline-flex; width: 18px; height: 18px; color: var(--drifter); opacity: 0; transform: translateX(-5px) rotate(-24deg); }
+    .wind-leaf svg { width: 100%; height: 100%; }
+    #windCue.warning .wind-leaf { opacity: 1; animation: leaf-drift .55s ease-in-out infinite alternate; }
+    #windCue.warning .wind-leaf.trailing { animation-delay: .2s; }
+    @keyframes leaf-drift { to { transform: translate(7px, -3px) rotate(28deg); } }
+    #windCue[hidden] { display: none; }
+    body:not(.in-game) #hud,
+    body:not(.in-game) #targetArrow,
+    body:not(.in-game) #prompt,
+    body:not(.in-game) #bottomHud,
+    body:not(.in-game) #hint,
+    body:not(.in-game) #fps,
+    body:not(.in-game) #windCue,
+    body:not(.in-game) #touchControls { display: none; }
+
+    @media (max-width: 800px) {
+      #hud { grid-template-columns: 1fr auto; gap: 7px; padding-left: 10px; padding-right: 10px; }
+      #hud .hud-left { grid-column: 1; grid-row: 1; }
+      #hud #timerChip { grid-column: 2; grid-row: 1; }
+      #hud .hud-right { grid-column: 1 / -1; grid-row: 2; justify-content: space-between; }
+      .hud-chip { min-height: 38px; padding: 6px 9px; gap: 6px; font-size: 11px; }
+      .hud-chip strong { font-size: 13px; }
+      #time { font-size: 19px; }
+      #bottomHud { bottom: max(12px, env(safe-area-inset-bottom)); flex-direction: column; align-items: center; gap: 8px; }
+      #cooldowns { gap: 5px; }
+      .cooldown { min-width: 112px; min-height: 40px; padding: 5px 7px; }
+      #hint { display: none; }
+      #touchControls { display: flex; }
+      #prompt { bottom: 158px; font-size: 13px; }
+    }
+    @media (max-width: 460px) {
+      .hud-label { display: none; }
+      .hud-chip { border-radius: 9px; }
+      #flames { gap: 2px; }
+      .flame { width: 12px; height: 16px; }
+      #moteCells { gap: 3px; padding: 6px 8px; }
+      .mote-cell { width: 12px; height: 17px; }
+      .cooldown { min-width: 102px; grid-template-columns: 24px auto; }
+      .cooldown svg { width: 20px; height: 20px; }
+      #prompt { bottom: 152px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto!important; animation-duration: .01ms!important; animation-iteration-count: 1!important; transition-duration: .01ms!important; }
+    }
   </style>
   <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 </head>
 <body>
-  <div id="hud">
-    <div class="chip">Lửa <b id="flames"></b></div>
-    <div class="chip">Đom đóm <b id="carried"></b></div>
-    <div class="chip">Đèn <b id="lit"></b></div>
-    <div class="chip">Đêm còn <b id="time"></b></div>
-    <div class="chip">Điểm <b id="score"></b></div>
-    <div class="chip">Tỏa sáng <b id="pulse"></b></div>
+  <div id="hud" aria-label="Trạng thái Đêm">
+    <div class="hud-group hud-left">
+      <div class="hud-chip" aria-label="Ngọn Lửa">
+        <span class="hud-label">Lửa</span>
+        <span id="flames" aria-hidden="true"></span>
+      </div>
+    </div>
+    <div class="hud-chip" id="timerChip" aria-live="off">
+      <span class="hud-label" id="nightLabel">Đêm 1</span>
+      <strong id="time">5:00</strong>
+    </div>
+    <div class="hud-group hud-right">
+      <div class="hud-chip"><span class="hud-label">Đèn</span><strong id="lit">0/5</strong></div>
+      <div class="hud-chip"><span class="hud-label">Điểm</span><strong id="score">0</strong></div>
+    </div>
   </div>
-  <div id="prompt"></div>
-  <div id="hint">WASD di chuyển · kéo chuột / ← → xoay camera · Space nhảy · E nạp đèn · Q tỏa sáng · R chơi lại</div>
-  <div id="overlay"><h1 id="ovTitle"></h1><p id="ovReason"></p><p id="ovScore"></p><p>Bấm <b>R</b> để chơi lại</p></div>
-  <div id="start">
-    <h1>Đảo Đèn Lồng</h1>
-    <p>Đêm 1 – Đảo Bến. Sương đen đã nuốt ánh sáng của đảo. Hãy giúp Mây gom đom đóm, thắp lại 5 Đèn Lồng Lớn trước bình minh, và né Bóng Mực.</p>
-    <p><b>Bấm để bắt đầu</b></p>
+  <div id="windCue" role="status" aria-live="polite" hidden>
+    <span class="wind-leaf" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.5 3.5C12.2 3.8 5.5 6 3.7 12.2c-.8 2.8 1.5 6 4.4 6.4 6.6 1 11-7.2 12.4-15.1Z" fill="currentColor"/><path d="M5.2 19 16 8.5" fill="none" stroke="#F2C14E" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+    <span id="windCueText"></span>
+    <span class="wind-leaf trailing" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.5 3.5C12.2 3.8 5.5 6 3.7 12.2c-.8 2.8 1.5 6 4.4 6.4 6.6 1 11-7.2 12.4-15.1Z" fill="currentColor"/><path d="M5.2 19 16 8.5" fill="none" stroke="#F2C14E" stroke-width="1.3" stroke-linecap="round"/></svg></span>
   </div>
+  <div id="targetArrow" role="img" aria-label="Hướng tới đèn lồng chưa thắp">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3 42 40 24 31 6 40 24 3Z" fill="currentColor" stroke="#0E1430" stroke-width="2" stroke-linejoin="round"/><circle cx="24" cy="23" r="3" fill="#FFE9B0"/></svg>
+  </div>
+  <div id="prompt" aria-live="polite"></div>
+  <div id="bottomHud">
+    <div class="mote-meter" aria-label="Đom đóm đang mang">
+      <span class="meter-label">Đom đóm · <b id="carried">0/10</b></span>
+      <div id="moteCells" aria-hidden="true"></div>
+    </div>
+    <div id="cooldowns">
+      <div class="cooldown" aria-label="Hồi chiêu lướt">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h7l-2 8 13-13h-7l2-6L3 13Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <div><strong>Lướt <span id="dash"></span></strong><small id="dashStatus">Sẵn sàng</small></div>
+      </div>
+      <div class="cooldown" aria-label="Hồi chiêu Tỏa Sáng">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 14.2 9.8 22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2L12 2Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <div><strong>Tỏa sáng</strong><small id="pulse">Cần 3 đom đóm</small></div>
+      </div>
+    </div>
+  </div>
+  <div id="hint">W A S D di chuyển · kéo chuột hoặc ← → xoay camera · Space nhảy · Shift lướt · E nạp đèn · Q tỏa sáng · Esc/P tạm dừng</div>
+  <div id="fps" aria-hidden="true"></div>
+  <div id="touchControls" aria-label="Điều khiển cảm ứng">
+    <div class="touch-pad" aria-label="Di chuyển">
+      <button class="touch-key touch-up" data-touch-key="KeyW" aria-label="Tiến">▲</button>
+      <button class="touch-key touch-left" data-touch-key="KeyA" aria-label="Trái">◀</button>
+      <button class="touch-key touch-down" data-touch-key="KeyS" aria-label="Lùi">▼</button>
+      <button class="touch-key touch-right" data-touch-key="KeyD" aria-label="Phải">▶</button>
+    </div>
+    <div class="touch-actions">
+      <button class="touch-key" data-touch-key="Space" aria-label="Nhảy">Nhảy</button>
+      <button class="touch-key" data-touch-key="ShiftLeft" aria-label="Lướt">Lướt</button>
+      <button class="touch-key" data-touch-key="KeyE" aria-label="Nạp đèn">Nạp</button>
+      <button class="touch-key" data-touch-key="KeyQ" aria-label="Tỏa sáng">Sáng</button>
+    </div>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <main id="screen" class="visible" role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+    <section class="panel" id="menuPanel">
+      <p class="eyebrow">Một câu chuyện qua ba đêm</p>
+      <h1 id="panelTitle">Đảo Đèn<br/>Lồng</h1>
+      <p>Mây gom đom đóm, thắp lại những ngọn đèn lớn và đưa ánh sáng trở về các hòn đảo trên mây.</p>
+      <div class="actions">
+        <button class="action primary" data-action="start">Bắt đầu hành trình</button>
+        <button class="action" data-action="settings">Cài đặt</button>
+      </div>
+    </section>
+    <section class="panel" id="introPanel" hidden>
+      <p class="eyebrow" id="introEyebrow">Đêm 1 · Đảo Bến</p>
+      <h2 id="introTitle">Đảo Bến</h2>
+      <p class="story" id="introStory"></p>
+      <p>Thu gom đom đóm, nạp đủ 10 vào mỗi đèn và giữ Ngọn Lửa của Mây đến bình minh.</p>
+      <div class="actions">
+        <button class="action primary" data-action="play-night">Bước vào đêm</button>
+        <button class="action subtle" data-action="menu">Về menu</button>
+      </div>
+    </section>
+    <section class="panel" id="pausePanel" hidden>
+      <p class="eyebrow" id="pauseNight">Đêm 1 đang tạm dừng</p>
+      <h2>Khoảng lặng</h2>
+      <p>Đèn vẫn chờ Mây. Hãy nghỉ một chút rồi tiếp tục nhé.</p>
+      <div class="actions">
+        <button class="action primary" data-action="continue">Tiếp tục</button>
+        <button class="action" data-action="restart">Chơi lại Đêm này</button>
+        <button class="action" data-action="settings">Cài đặt</button>
+        <button class="action subtle" data-action="menu">Về menu</button>
+      </div>
+    </section>
+    <section class="panel" id="settingsPanel" hidden>
+      <p class="eyebrow">Tùy chỉnh chuyến đi</p>
+      <h2>Cài đặt</h2>
+      <div class="settings">
+        <label class="setting" for="volume">
+          <span>Âm lượng <output id="volumeValue">65%</output></span>
+          <input id="volume" type="range" min="0" max="100" value="65" />
+        </label>
+        <label class="setting" for="sensitivity">
+          <span>Độ nhạy chuột <output id="sensitivityValue">60%</output></span>
+          <input id="sensitivity" type="range" min="20" max="150" value="60" />
+        </label>
+        <p class="setting-note">Cài đặt được lưu trên thiết bị này.</p>
+      </div>
+      <div class="actions">
+        <button class="action primary" data-action="settings-back">Hoàn tất</button>
+      </div>
+    </section>
+    <section class="panel" id="resultPanel" hidden>
+      <p class="eyebrow" id="resultEyebrow">Kết quả Đêm 1</p>
+      <h2 id="resultTitle">Đảo đã sáng</h2>
+      <p id="resultText"></p>
+      <div class="result-score">
+        <div><strong id="nightScore">0</strong><small>Điểm đêm này</small></div>
+        <div><strong id="totalScore">0</strong><small>Tổng hành trình</small></div>
+      </div>
+      <div class="actions" id="resultActions"></div>
+    </section>
+  </main>
   <script type="module" src="./main.js"></script>
 </body>
 </html>

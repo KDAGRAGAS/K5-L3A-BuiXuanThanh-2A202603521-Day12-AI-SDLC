@@ -1,0 +1,13 @@
+{
+  "requirement": "Mỗi đêm phát night_start đúng một lần ở simulation tick đầu và ghi đúng số đêm",
+  "night": 3,
+  "seed": 20,
+  "ticks": 1,
+  "scenario": { "random_motes": false, "random_shades": false, "random_drifters": false, "motes": [], "shades": [] },
+  "inputs": { "frames": [] },
+  "expect": {
+    "events": [[1, "night_start", { "night": 3 }]],
+    "end": { "type": "end", "ticks": 1, "state": "playing", "score": 0 }
+  },
+  "snapshot_every": 1
+}

@@ -1,0 +1,14 @@
+{
+  "requirement": "Bục Đêm 2 phóng Mây từ đảo A về phía đảo B và giữ vận tốc tới lúc tiếp đất",
+  "night": 2,
+  "seed": 2,
+  "ticks": 90,
+  "scenario": { "random_motes": false, "random_shades": false, "motes": [], "shades": [], "random_drifters": false, "player": { "pos": [20, 0, 18] } },
+  "inputs": { "frames": [] },
+  "expect": {
+    "events": [],
+    "snapshot": [85, "player.pos", [54, 0, 18]],
+    "snapshot_fields": { "player.grounded": true, "night": 2 }
+  },
+  "snapshot_every": 1
+}

@@ -1,0 +1,23 @@
+{
+  "requirement": "Gió Lạc đang flee thả lại toàn bộ đom đóm đã cướp khi trúng pulse",
+  "night": 2,
+  "seed": 19,
+  "ticks": 1,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "motes": [],
+    "shades": [],
+    "random_drifters": false,
+    "player": { "carried": 3 },
+    "drifters": [{ "id": "D1", "pos": [0, 0, 3], "state": "flee", "stolen": 2 }]
+  },
+  "inputs": { "frames": [{ "tick": 0, "pulse": true }] },
+  "expect": {
+    "events": [
+      [1, "drifter_drop", { "drifter_id": "D1", "amount": 2 }]
+    ],
+    "snapshot_fields": { "motes.0.kind": "dropped", "motes.0.ttl_s": 8, "drifters.0.state": "flee" }
+  },
+  "snapshot_every": 1
+}

@@ -1,0 +1,14 @@
+{
+  "requirement": "Lướt 14 m/s trong 0.2 s theo hướng mặt, phát dash và cooldown bắt đầu lúc kích hoạt",
+  "night": 1,
+  "seed": 12,
+  "ticks": 12,
+  "scenario": { "random_motes": false, "random_shades": false, "motes": [], "shades": [] },
+  "inputs": { "frames": [{ "tick": 0, "dash": true }] },
+  "expect": {
+    "events": [[1, "dash", {}]],
+    "snapshot": [12, "player.pos", [0, 0, 2.8]],
+    "snapshot_fields": { "sim_tick": 12, "player.dash_cd_s": 1.317 }
+  },
+  "snapshot_every": 1
+}

@@ -1,53 +1,177 @@
-// Mọi con số gameplay nằm ở đây. game.contract.json được sinh từ file này
-// (npm run contract) và test kiểm tra hai bên luôn khớp nhau.
-
+// Toàn bộ thông số gameplay và hình học bản đồ nằm ở đây.
 export const TICK_RATE = 60;
 
-// Các khóa khai báo trong Test Contract v1.0 (tuning).
 export const TUNING = {
-  player_speed: 6.0, // m/s
-  carry_capacity: 10, // số đom đóm mang tối đa
-  lantern_cost: 5, // số đom đóm để thắp 1 đèn
+  player_speed: 6.0,
+  player_accel: 60.0,
+  jump_speed: 7.0,
+  gravity: -20.0,
+  dash_speed: 14.0,
+  dash_duration_s: 0.2,
+  dash_cooldown_s: 1.5,
+  carry_capacity: 10,
+  lantern_cost: 10,
   lantern_count_night1: 5,
-  pickup_radius: 1.0, // m, nhặt tự động khi khoảng cách XZ <= r
-  interact_radius: 2.5, // m, nạp đèn khi bấm interact
-  pulse_cost: 1, // tỏa sáng tốn 1 đom đóm đang mang
-  pulse_radius: 6.0, // m
-  night1_duration_s: 300,
-  flames: 3, // "máu" của Mây
-  invuln_s: 2.0, // bất tử sau khi bị chạm
-  hit_drop_ratio: 0.5, // rơi floor(carried * 0.5) đom đóm, mất luôn
-  pulse_stun_s: 3.0,
+  lantern_count_night2: 6,
+  lantern_count_night3: 7,
+  pickup_radius: 1.0,
+  pickup_vertical: 1.5,
+  mote_start_count: 20,
+  mote_max: 30,
+  mote_respawn_ticks: 240,
+  mote_ttl_s: 8.0,
+  interact_radius: 2.0,
+  safe_radius: 6.0,
+  pulse_cost: 3,
+  pulse_radius: 5.0,
+  pulse_stun_s: 2.0,
   pulse_push_m: 4.0,
-  pulse_cooldown_s: 2.0,
-  safe_radius: 6.0, // quanh đèn ĐÃ THẮP, Bóng Mực không vào được
-  shade_speed: 3.5, // m/s
-  shade_hit_radius: 1.0, // m
-  fall_enabled: false, // mép đảo là tường vô hình, không rơi
+  pulse_push_s: 0.25,
+  pulse_cooldown_s: 3.0,
+  shade_speed: 4.0,
+  shade_speed_night3: 4.5,
+  shade_detect_radius: 12.0,
+  shade_forget_radius: 18.0,
+  shade_hit_radius: 1.0,
+  shade_hit_vertical: 1.5,
+  shade_hit_knockback_m: 2.0,
+  shade_recoil_s: 1.0,
+  shade_wander_speed: 2.0,
+  shade_center_height: 1.0,
+  player_hit_center_height: 1.0,
+  pulse_center_height: 0.8,
+  drifter_pulse_center_height: 0.8,
+  safe_push_ticks: 30,
+  invuln_s: 1.5,
+  hit_drop_ratio: 0.5,
+  flames: 3,
+  fall_y: -10.0,
+  fall_wait_ticks: 60,
+  fall_invuln_s: 1.5,
+  night1_duration_s: 300,
+  night2_duration_s: 330,
+  night3_duration_s: 360,
+  drifter_max: 2,
+  drifter_spawn_ticks: 1200,
+  drifter_idle_speed: 2.0,
+  drifter_chase_speed: 7.0,
+  drifter_detect_radius: 15.0,
+  drifter_min_carried: 5,
+  drifter_touch_radius: 1.2,
+  drifter_steal_max: 3,
+  drifter_flee_ticks: 240,
+  drifter_pulse_remove_ticks: 120,
+  charm_duration_ticks: 600,
+  charm_respawn_ticks: 2700,
+  charm_speed: 7.2,
+  wind_interval_ticks: 1800,
+  wind_warning_ticks: 120,
+  wind_duration_ticks: 300,
+  wind_speed: 2.0,
   score: {
     per_mote: 10,
     per_lantern: 100,
-    per_stun: 5, // mỗi Bóng Mực bị choáng
-    per_second_left: 2, // khi thắng: floor(time_left_s) * 2
-    per_flame_left: 50, // khi thắng: flames * 50
+    per_stun: 5,
+    per_second_left: 2,
+    per_flame_left: 50,
   },
 };
 
-// Thông số thế giới không nằm trong contract (giả định của mình, xem docs/notes).
+const positionsOnRing = (cx, cz, radius, y, angles) => angles.map((deg) => {
+  const rad = (deg * Math.PI) / 180;
+  return [cx + radius * Math.cos(rad), y, cz + radius * Math.sin(rad)];
+});
+const every = (count, start, step) => Array.from({ length: count }, (_, i) => start + i * step);
+
 export const WORLD = {
-  island_radius: 40,
-  lantern_ring_radius: 25,
-  mote_count: 40,
-  mote_min_r: 4,
-  mote_max_r: 37,
-  mote_respawn_interval_s: 10,
-  mote_respawn_below: 15,
-  initial_shades: 2,
-  max_shades: 5,
-  shade_spawn_interval_s: 30,
-  shade_spawn_r: 36,
-  shade_y: 1.0, // tâm Bóng Mực lơ lửng 1 m
-  shade_hit_knockback_m: 5.0, // Bóng Mực vừa chạm Mây bị bật lùi (không choáng)
-  jump_speed: 6.0,
-  gravity: 20.0,
+  origin: [0, 0, 0],
+  start_facing_deg: 0,
+  night1: {
+    islands: [{ center: [0, 0], radius: 40 }],
+    lanterns: [
+      [0, 0, 25], [23.8, 0, 7.7], [14.7, 0, -20.2], [-14.7, 0, -20.2], [-23.8, 0, 7.7],
+    ],
+    mote_rings: [
+      { center: [0, 0], radius: 12, y: 0, angles: every(8, 0, 45) },
+      { center: [0, 0], radius: 33, y: 0, angles: every(16, 0, 22.5) },
+    ],
+    shade_spawn_points: positionsOnRing(0, 0, 37, 1, every(12, 15, 30)),
+    shade_first_tick: 300,
+    shade_first_count: 2,
+    shade_interval_ticks: 480,
+    shade_max: 6,
+    charms: [],
+    jump_pads: [],
+    bridges: [],
+    ramps: [],
+    towers: [],
+    wind: false,
+  },
+  night2: {
+    islands: [
+      { center: [0, 0], radius: 28 },
+      { center: [70, 0], radius: 28 },
+    ],
+    bridges: [{ min_x: 26, max_x: 44, min_z: -2, max_z: 2, y: 0 }],
+    jump_pads: [
+      { id: 'P1', pos: [20, 0, 18], radius: 1, velocity: [24, 14, 0] },
+      { id: 'P2', pos: [50, 0, -18], radius: 1, velocity: [-24, 14, 0] },
+    ],
+    lanterns: [
+      [0, 0, 20], [17, 0, -10], [-17, 0, -10], [70, 0, 20], [87, 0, -10], [53, 0, -10],
+    ],
+    mote_rings: [
+      { center: [0, 0], radius: 10, y: 0, angles: [0, 90, 180, 270] },
+      { center: [0, 0], radius: 22, y: 0, angles: every(8, 0, 45) },
+      { center: [70, 0], radius: 10, y: 0, angles: [0, 90, 180, 270] },
+      { center: [70, 0], radius: 22, y: 0, angles: every(8, 0, 45) },
+    ],
+    shade_spawn_points: [
+      ...positionsOnRing(0, 0, 26, 1, every(8, 22.5, 45)),
+      ...positionsOnRing(70, 0, 26, 1, every(8, 22.5, 45)),
+    ],
+    shade_first_tick: 420,
+    shade_first_count: 1,
+    shade_interval_ticks: 420,
+    shade_max: 8,
+    charms: [{ id: 'C1', pos: [35, 0, 0] }],
+    ramps: [],
+    towers: [],
+    wind: false,
+  },
+  night3: {
+    islands: [{ center: [0, 0], radius: 45 }],
+    tiers: [
+      { id: 0, y: 0, kind: 'disk', radius: 45 },
+      { id: 1, y: 3, kind: 'half_annulus', inner: 12, outer: 24, z_sign: 1 },
+      { id: 2, y: 6, kind: 'disk', radius: 8 },
+    ],
+    ramps: [
+      { id: 'R1', angle_deg: 30, width: 3, from_radius: 30, to_radius: 24, from_y: 0, to_y: 3 },
+      { id: 'R2', angle_deg: 150, width: 3, from_radius: 30, to_radius: 24, from_y: 0, to_y: 3 },
+    ],
+    jump_pads: [{ id: 'P1', pos: [0, 3, 13], radius: 1, velocity: [0, 12, -8] }],
+    tower: { pos: [0, 6, 0], radius: 2, height: 8 },
+    lanterns: [
+      [0, 6, 6], [18, 3, 10], [-18, 3, 10], [35, 0, -10], [-35, 0, -10], [20, 0, -35], [-20, 0, -35],
+    ],
+    mote_rings: [
+      { center: [0, 0], radius: 34, y: 0, angles: every(18, 0, 20) },
+      { center: [0, 0], radius: 18, y: 3, angles: every(8, 20, 20) },
+      { center: [0, 0], radius: 5, y: 6, angles: every(4, 45, 90) },
+    ],
+    shade_spawn_points: positionsOnRing(0, 0, 43, 1, every(16, 0, 22.5)),
+    shade_first_tick: 360,
+    shade_first_count: 1,
+    shade_interval_ticks: 360,
+    shade_max: 10,
+    charms: [{ id: 'C1', pos: [30, 0, 25] }, { id: 'C2', pos: [-30, 0, 25] }],
+    bridges: [],
+    towers: [],
+    wind: true,
+  },
 };
+
+export function pointsFromRings(rings) {
+  return rings.flatMap((r) => positionsOnRing(r.center[0], r.center[1], r.radius, r.y, r.angles));
+}

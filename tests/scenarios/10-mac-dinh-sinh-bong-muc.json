@@ -1,5 +1,5 @@
 {
-  "requirement": "Bóng Mực mặc định: 2 con ban đầu, sinh thêm S3 đúng tick 1800 (30 s)",
+  "requirement": "Bóng Mực Đêm 1: S1/S2 ở tick 300, thêm một con mỗi 480 tick, id theo thứ tự sinh",
   "seed": 1,
   "ticks": 1800,
   "scenario": {
@@ -11,13 +11,11 @@
   },
   "expect": {
     "events": [
-      [
-        1800,
-        "shade_spawned",
-        {
-          "id": "S3"
-        }
-      ]
+      [300, "shade_spawned", { "id": "S1" }],
+      [300, "shade_spawned", { "id": "S2" }],
+      [780, "shade_spawned", { "id": "S3" }],
+      [1260, "shade_spawned", { "id": "S4" }],
+      [1740, "shade_spawned", { "id": "S5" }]
     ]
   },
   "snapshot_every": 60

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Chế độ headless theo Test Contract v1.0.
+// Chế độ headless theo Test Contract v1.1.
 // node src/headless/cli.js --seed <int> --night 1 [--scenario f] [--inputs f]
 //                          --ticks <int> --out <file.jsonl> [--snapshot-every <int>]
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -61,13 +61,13 @@ export function run(opts) {
   for (let k = 0; k < opts.ticks && game.state === 'playing'; k++) {
     const f = frames.get(k);
     if (f) {
-      for (const key of ['move', 'cam_yaw_deg', 'jump', 'interact', 'pulse']) if (f[key] !== undefined) cur[key] = f[key];
+      for (const key of ['move', 'cam_yaw_deg', 'jump', 'dash', 'interact', 'pulse', 'pause']) if (f[key] !== undefined) cur[key] = f[key];
     }
     game.step(cur);
     for (const e of game.drainEvents()) lines.push(JSON.stringify(e));
     if (game.tick % opts.snapshotEvery === 0) lines.push(JSON.stringify(game.snapshot()));
   }
-  lines.push(JSON.stringify({ type: 'end', ticks: game.steps, state: game.state, score: game.score }));
+  lines.push(JSON.stringify({ type: 'end', ticks: game.tick, state: game.state, score: game.score }));
 
   const out = resolve(opts.out);
   mkdirSync(dirname(out), { recursive: true });

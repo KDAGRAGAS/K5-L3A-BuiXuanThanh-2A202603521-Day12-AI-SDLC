@@ -1,0 +1,13 @@
+{
+  "requirement": "Bục Đêm 3 phóng Mây từ tầng 1 và đáp xuống đĩa tầng 2",
+  "night": 3,
+  "seed": 18,
+  "ticks": 90,
+  "scenario": { "random_motes": false, "random_shades": false, "motes": [], "shades": [], "random_drifters": false, "player": { "pos": [0, 3, 13] } },
+  "inputs": { "frames": [] },
+  "expect": {
+    "events": [],
+    "snapshot_fields": { "night": 3, "player.grounded": true, "player.pos.1": 6 }
+  },
+  "snapshot_every": 1
+}

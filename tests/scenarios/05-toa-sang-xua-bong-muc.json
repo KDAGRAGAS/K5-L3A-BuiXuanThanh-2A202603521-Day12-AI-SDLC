@@ -1,5 +1,5 @@
 {
-  "requirement": "Pulse tốn 1 đom đóm, choáng Bóng Mực trong 6 m, đẩy lùi 4 m",
+  "requirement": "Pulse tốn 3 đom đóm, khóa Bóng Mực trong 5 m, choáng 120 tick và đẩy lùi tổng 4 m",
   "seed": 1,
   "ticks": 1,
   "scenario": {
@@ -25,7 +25,7 @@
       }
     ],
     "player": {
-      "carried": 2
+      "carried": 3
     }
   },
   "expect": {

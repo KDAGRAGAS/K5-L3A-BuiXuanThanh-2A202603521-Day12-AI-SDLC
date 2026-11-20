@@ -37,8 +37,11 @@ test('CLI: chạy đúng định dạng, snapshot tick 0, dòng end cuối, mã 
   assert.equal(snaps.length, 21); // tick 0,10,...,200
   assert.ok(snaps.every((s, i) => s.tick === i * 10 && s.sim_tick === s.tick));
   const ev = lines.filter((l) => l.type === 'event');
-  assert.deepEqual(ev, [{ type: 'event', tick: 40, name: 'mote_picked', data: { carried: 1 } }]);
-  assert.deepEqual(snaps[12].player.pos, [0, 0, 12]);
+  assert.deepEqual(ev, [
+    { type: 'event', tick: 1, name: 'night_start', data: { night: 1 } },
+    { type: 'event', tick: 43, name: 'mote_picked', data: { carried: 1 } },
+  ]);
+  assert.deepEqual(snaps[12].player.pos, [0, 0, 11.75]);
   assert.equal(snaps[12].time_left_s, 298);
 });
 

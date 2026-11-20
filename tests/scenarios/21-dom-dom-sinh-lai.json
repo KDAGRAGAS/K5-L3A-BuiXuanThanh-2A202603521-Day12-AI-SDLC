@@ -1,0 +1,21 @@
+{
+  "requirement": "Mote bị nhặt được thay bằng một mote ở điểm trống tại simulation tick 240",
+  "night": 1,
+  "seed": 21,
+  "ticks": 240,
+  "scenario": {
+    "random_motes": true,
+    "random_shades": false,
+    "motes": [{ "id": "M1", "pos": [0, 0, 1], "kind": "random" }],
+    "shades": []
+  },
+  "inputs": { "frames": [] },
+  "expect": {
+    "events": [[1, "mote_picked", { "carried": 1 }]],
+    "snapshots": [
+      [239, "motes.length", 0],
+      [240, "motes.length", 1]
+    ]
+  },
+  "snapshot_every": 1
+}

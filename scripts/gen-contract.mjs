@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { TUNING } from '../src/core/config.js';
 
 export const CONTRACT = {
-  contract_version: '1.0',
+  contract_version: '1.1',
   team: '2A202603521-bui-xuan-thanh',
   build_cmd: 'npm install',
   run_cmd: 'npm start',

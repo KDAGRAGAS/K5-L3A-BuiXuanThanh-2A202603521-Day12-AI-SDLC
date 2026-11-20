@@ -11,7 +11,15 @@ const inp = (o = {}) => ({ ...DEFAULT_INPUT, ...o });
 const run = (g, n, input = inp()) => {
   for (let i = 0; i < n; i++) g.step(input);
 };
-const names = (g) => g.drainEvents().map((e) => e.name);
+const drain = (g) => g.drainEvents().filter((e) => e.name !== 'night_start');
+const names = (g) => drain(g).map((e) => e.name);
+
+test('night_start được phát ở tick simulation đầu tiên và mang đúng night', () => {
+  const g = new Game({ seed: 1, night: 2, scenario: calm });
+  assert.equal(drain(g).length, 0);
+  g.step(inp());
+  assert.deepEqual(g.drainEvents(), [{ type: 'event', tick: 1, name: 'night_start', data: { night: 2 } }]);
+});
 
 test('game.contract.json khớp src/core/config.js', () => {
   const file = JSON.parse(readFileSync(new URL('../game.contract.json', import.meta.url), 'utf8'));
@@ -33,32 +41,32 @@ test('mặc định: 5 đèn L1..L5, L1 ở (0,0,25), người chơi ở gốc',
   assert.deepEqual(s.player.pos, [0, 0, 0]);
   assert.equal(s.player.flames, T.flames);
   assert.equal(s.time_left_s, T.night1_duration_s);
-  assert.equal(s.motes_active, 40);
-  assert.equal(s.shades.length, 2);
+  assert.equal(s.motes_active, 20);
+  assert.equal(s.shades.length, 0);
 });
 
 test('di chuyển: move [0,1] yaw 0 trong 120 tick -> z = 12', () => {
   const g = new Game({ seed: 1, scenario: calm });
   run(g, 120, inp({ move: [0, 1] }));
-  assert.deepEqual(g.snapshot().player.pos, [0, 0, 12]);
+  assert.deepEqual(g.snapshot().player.pos, [0, 0, 11.75]);
   assert.equal(g.snapshot().time_left_s, 298);
 });
 
 test('di chuyển: yaw 90 độ biến move [0,1] thành +X; vector > 1 được chuẩn hóa', () => {
   const g = new Game({ seed: 1, scenario: calm });
   run(g, 60, inp({ move: [0, 1], cam_yaw_deg: 90 }));
-  assert.deepEqual(g.snapshot().player.pos, [6, 0, 0]);
+  assert.deepEqual(g.snapshot().player.pos, [5.75, 0, 0]);
   const h = new Game({ seed: 1, scenario: calm });
   run(h, 60, inp({ move: [1, 1] }));
   const [x, , z] = h.player.pos;
-  assert.ok(Math.abs(Math.hypot(x, z) - 6) < 1e-9);
+  assert.ok(Math.abs(Math.hypot(x, z) - 5.75) < 1e-9);
 });
 
-test('đảo có mép: không đi ra ngoài bán kính 40 m (fall_enabled = false)', () => {
-  const g = new Game({ seed: 1, scenario: calm });
-  run(g, 60 * 20, inp({ move: [0, 1] }));
-  assert.ok(Math.hypot(g.player.pos[0], g.player.pos[2]) <= 40 + 1e-9);
-  assert.ok(!names(g).includes('player_hit'));
+test('mép đảo mở: rơi xuống dưới -10 thì mất lửa theo quy tắc Phase 2', () => {
+  const g = new Game({ seed: 1, scenario: { ...calm, player: { pos: [39, 0, 0] } } });
+  run(g, 80, inp({ move: [1, 0] }));
+  assert.ok(names(g).includes('player_hit'));
+  assert.equal(g.player.flames, 2);
 });
 
 test('nhảy: chỉ kích hoạt ở cạnh lên, rồi rơi về Y = 0', () => {
@@ -72,7 +80,7 @@ test('nhảy: chỉ kích hoạt ở cạnh lên, rồi rơi về Y = 0', () => 
 test('nhặt đom đóm: trong bán kính (<= r) thì nhặt, ngoài thì không', () => {
   const g = new Game({ seed: 1, scenario: { ...calm, motes: [[0, 0, T.pickup_radius], [0, 0, 1.5]] } });
   g.step(inp());
-  const ev = g.drainEvents();
+  const ev = drain(g);
   assert.equal(ev.length, 1);
   assert.deepEqual(ev[0], { type: 'event', tick: 1, name: 'mote_picked', data: { carried: 1 } });
   assert.equal(g.score, T.score.per_mote);
@@ -90,61 +98,63 @@ test('nạp đèn: deposit rồi lantern_lit khi đủ lantern_cost; nút intera
   const sc = { ...calm, player: { pos: [0, 0, 23], carried: 3 } };
   const g = new Game({ seed: 1, scenario: sc });
   g.step(inp({ interact: true }));
-  assert.deepEqual(g.drainEvents().map((e) => [e.name, e.data]), [['deposit', { lantern_id: 'L1', amount: 3, deposited: 3 }]]);
+  assert.deepEqual(drain(g).map((e) => [e.name, e.data]), [['deposit', { lantern_id: 'L1', amount: 3, deposited: 3 }]]);
   g.step(inp({ interact: true })); // vẫn giữ: không nạp lại
-  assert.equal(g.drainEvents().length, 0);
-  g.player.carried = 4;
+  assert.equal(drain(g).length, 0);
+  g.player.carried = 11;
   g.step(inp({ interact: false }));
   g.step(inp({ interact: true }));
-  const ev = g.drainEvents();
+  const ev = drain(g);
   assert.deepEqual(ev.map((e) => e.name), ['deposit', 'lantern_lit']);
-  assert.deepEqual(ev[0].data, { lantern_id: 'L1', amount: 2, deposited: 5 });
-  assert.equal(g.player.carried, 2);
+  assert.deepEqual(ev[0].data, { lantern_id: 'L1', amount: 7, deposited: 10 });
+  assert.equal(g.player.carried, 4);
   assert.equal(g.score, T.score.per_lantern);
 });
 
 test('nạp đèn: ngoài interact_radius thì không có gì', () => {
   const g = new Game({ seed: 1, scenario: { ...calm, player: { pos: [0, 0, 22.4], carried: 3 } } });
   g.step(inp({ interact: true }));
-  assert.equal(g.drainEvents().length, 0);
+  assert.equal(drain(g).length, 0);
 });
 
 test('tỏa sáng: tốn pulse_cost, choáng + đẩy Bóng Mực trong bán kính, có hồi chiêu', () => {
-  const sc = { ...calm, player: { carried: 2 }, shades: [{ id: 'S1', pos: [3, 1, 0] }, { id: 'S2', pos: [20, 1, 0] }] };
+  const sc = { ...calm, player: { carried: 3 }, shades: [{ id: 'S1', pos: [3, 1, 0] }, { id: 'S2', pos: [20, 1, 0] }] };
   const g = new Game({ seed: 1, scenario: sc });
   g.step(inp({ pulse: true }));
-  const ev = g.drainEvents();
+  const ev = drain(g);
   assert.deepEqual(ev.map((e) => [e.name, e.data]), [['pulse', { stunned_ids: ['S1'] }]]);
   const s = g.snapshot();
-  assert.equal(s.player.carried, 1);
+  assert.equal(s.player.carried, 0);
   assert.equal(s.shades[0].state, 'stunned');
-  assert.equal(s.shades[0].pos[0], 3 + T.pulse_push_m);
+  assert.ok(s.shades[0].pos[0] > 3);
   assert.equal(g.score, T.score.per_stun);
   g.step(inp({ pulse: false }));
   g.step(inp({ pulse: true })); // đang hồi chiêu
-  assert.equal(g.drainEvents().length, 0);
-  run(g, Math.round(T.pulse_stun_s * 60) - 3, inp());
+  assert.equal(drain(g).length, 0);
+  run(g, Math.round(T.pulse_stun_s * 60) - 4, inp());
   assert.equal(g.snapshot().shades[0].state, 'stunned');
   run(g, 1, inp());
-  assert.equal(g.snapshot().shades[0].state, 'chase');
+  assert.equal(g.snapshot().shades[0].state, 'stunned');
+  run(g, 1, inp());
+  assert.equal(g.snapshot().shades[0].state, 'wander');
 });
 
 test('tỏa sáng: không đủ đom đóm thì không kích hoạt', () => {
   const g = new Game({ seed: 1, scenario: { ...calm, shades: [{ pos: [3, 1, 0] }] } });
   g.step(inp({ pulse: true }));
-  assert.equal(g.drainEvents().length, 0);
+  assert.equal(drain(g).length, 0);
 });
 
-test('bị chạm: mất 1 lửa, rơi floor(carried * ratio), bất tử invuln_s', () => {
+test('bị chạm: mất 1 lửa, rơi nửa số mang, bất tử 90 tick', () => {
   const sc = { ...calm, player: { carried: 5 }, shades: [{ id: 'S1', pos: [0.5, 1, 0] }] };
   const g = new Game({ seed: 1, scenario: sc });
   g.step(inp());
-  assert.deepEqual(g.drainEvents().map((e) => [e.name, e.data]), [['player_hit', { by: 'shade', flames: 2, dropped: 2 }]]);
+  assert.deepEqual(drain(g).map((e) => [e.name, e.data]), [['player_hit', { by: 'shade', flames: 2, dropped: 2 }]]);
   assert.equal(g.player.carried, 3);
   run(g, Math.round(T.invuln_s * 60) - 1, inp());
-  assert.equal(g.drainEvents().length, 0);
-  g.step(inp());
-  assert.equal(g.drainEvents()[0].name, 'player_hit');
+  assert.equal(drain(g).length, 0);
+  assert.equal(g.player.invulnTicks, 1);
+  assert.ok(g.motes.some((m) => m.kind === 'dropped'));
 });
 
 test('hết lửa -> thua no_flames', () => {
@@ -175,7 +185,7 @@ test('hết giờ -> thua dawn đúng tick', () => {
 
 test('thắp đèn cuối -> thắng all_lit, cộng thưởng thời gian và lửa', () => {
   const lit = ['L2', 'L3', 'L4', 'L5'].map((id) => ({ id, lit: true }));
-  const sc = { ...calm, player: { pos: [0, 0, 24], carried: 5 }, lanterns: lit, time_left_s: 100 };
+  const sc = { ...calm, player: { pos: [0, 0, 24], carried: 10 }, lanterns: lit, time_left_s: 100 };
   const g = new Game({ seed: 1, scenario: sc });
   assert.equal(g.score, 0); // dựng scenario không cộng điểm
   g.step(inp({ interact: true }));
@@ -185,15 +195,15 @@ test('thắp đèn cuối -> thắng all_lit, cộng thưởng thời gian và l
   assert.equal(g.score, expected);
 });
 
-test('sinh Bóng Mực mỗi 30 s, có sự kiện shade_spawned, tối đa 5 con', () => {
-  const g = new Game({ seed: 3, scenario: { random_motes: false, motes: [], player: { flames: 99 } } });
+test('sinh 2 Bóng Mực tick 300, sau đó mỗi 480 tick, tối đa 6 con', () => {
+  const g = new Game({ seed: 3, scenario: { random_motes: false, random_shades: true, motes: [], player: { flames: 99 } } });
   const spawned = [];
-  for (let i = 0; i < 60 * 200; i++) {
+  for (let i = 0; i < 60 * 45; i++) {
     g.step(inp());
     for (const e of g.drainEvents()) if (e.name === 'shade_spawned') spawned.push([e.tick, e.data.id]);
   }
-  assert.deepEqual(spawned, [[1800, 'S3'], [3600, 'S4'], [5400, 'S5']]);
-  assert.equal(g.shades.length, 5);
+  assert.deepEqual(spawned.slice(0, 4), [[300, 'S1'], [300, 'S2'], [780, 'S3'], [1260, 'S4']]);
+  assert.equal(g.shades.length, 6);
 });
 
 test('tính tất định: cùng seed -> cùng trạng thái; khác seed -> khác', () => {

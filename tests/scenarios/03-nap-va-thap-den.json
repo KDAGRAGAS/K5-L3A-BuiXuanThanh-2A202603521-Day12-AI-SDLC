@@ -1,5 +1,5 @@
 {
-  "requirement": "Interact (cạnh lên) gần đèn: deposit rồi lantern_lit khi đủ 5 đom đóm",
+  "requirement": "Interact (cạnh lên) gần đèn: deposit rồi lantern_lit khi đủ 10 đom đóm",
   "seed": 1,
   "ticks": 30,
   "scenario": {
@@ -13,7 +13,7 @@
         0,
         23
       ],
-      "carried": 5
+      "carried": 10
     }
   },
   "expect": {
@@ -23,8 +23,8 @@
         "deposit",
         {
           "lantern_id": "L1",
-          "amount": 5,
-          "deposited": 5
+          "amount": 10,
+          "deposited": 10
         }
       ],
       [

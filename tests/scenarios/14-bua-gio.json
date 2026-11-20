@@ -1,0 +1,13 @@
+{
+  "requirement": "Nhặt Bùa Gió Đêm 2 thì phát charm_picked, áp dụng 600 tick",
+  "night": 2,
+  "seed": 14,
+  "ticks": 1,
+  "scenario": { "random_motes": false, "random_shades": false, "motes": [], "shades": [], "random_drifters": false, "player": { "pos": [35, 0, 0] } },
+  "inputs": { "frames": [] },
+  "expect": {
+    "events": [[1, "charm_picked", { "charm_id": "C1", "charm_ticks": 600 }]],
+    "snapshot_fields": { "player.charm_s": 10, "charms.0.available": false }
+  },
+  "snapshot_every": 1
+}
