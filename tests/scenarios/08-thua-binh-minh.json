@@ -16,7 +16,8 @@
         "game_over",
         {
           "result": "lost",
-          "reason": "dawn"
+          "reason": "dawn",
+          "score": 0
         }
       ]
     ],

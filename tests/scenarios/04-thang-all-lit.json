@@ -1,5 +1,5 @@
 {
-  "requirement": "Thắp đèn cuối cùng -> game_over won/all_lit, cộng thưởng thời gian và lửa",
+  "requirement": "Ticket-03 thay thắng sớm: thắp hết đèn không kết thúc đêm; tiếp tục tới bình minh",
   "seed": 1,
   "ticks": 100,
   "scenario": {
@@ -50,23 +50,16 @@
         11,
         "lantern_lit",
         {
-          "lantern_id": "L1"
-        }
-      ],
-      [
-        11,
-        "game_over",
-        {
-          "result": "won",
-          "reason": "all_lit"
+          "lantern_id": "L1",
+          "relight": false
         }
       ]
     ],
     "end": {
       "type": "end",
-      "ticks": 11,
-      "state": "won",
-      "score": 448
+      "ticks": 100,
+      "state": "playing",
+      "score": 150
     }
   },
   "inputs": {

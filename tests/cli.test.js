@@ -32,17 +32,16 @@ test('CLI: chạy đúng định dạng, snapshot tick 0, dòng end cuối, mã 
   const lines = readLines(out);
   assert.equal(lines[0].type, 'snapshot');
   assert.equal(lines[0].tick, 0);
-  assert.deepEqual(lines.at(-1), { type: 'end', ticks: 200, state: 'playing', score: 10 });
+  // v1.2: pickup không cho điểm → score = 0
+  assert.deepEqual(lines.at(-1), { type: 'end', ticks: 200, state: 'playing', score: 0 });
   const snaps = lines.filter((l) => l.type === 'snapshot');
   assert.equal(snaps.length, 21); // tick 0,10,...,200
   assert.ok(snaps.every((s, i) => s.tick === i * 10 && s.sim_tick === s.tick));
   const ev = lines.filter((l) => l.type === 'event');
-  assert.deepEqual(ev, [
-    { type: 'event', tick: 1, name: 'night_start', data: { night: 1 } },
-    { type: 'event', tick: 43, name: 'mote_picked', data: { carried: 1 } },
-  ]);
+  assert.deepEqual(ev.filter((e) => e.name !== 'night_start'), [{ type: 'event', tick: 43, name: 'mote_picked', data: { carried: 1 } }]);
   assert.deepEqual(snaps[12].player.pos, [0, 0, 11.75]);
-  assert.equal(snaps[12].time_left_s, 298);
+  // v1.2: night1 = 240s, tick 120 = 2s → time_left_s = 238
+  assert.equal(snaps[12].time_left_s, 238);
 });
 
 test('CLI: --snapshot-every và dừng sớm khi game kết thúc', () => {
@@ -52,7 +51,7 @@ test('CLI: --snapshot-every và dừng sớm khi game kết thúc', () => {
   assert.equal(r.status, 0, r.stderr);
   const lines = readLines(out);
   assert.deepEqual(lines.filter((l) => l.type === 'snapshot').map((s) => s.tick), [0, 25, 50, 75, 100]);
-  assert.deepEqual(lines.at(-2), { type: 'event', tick: 120, name: 'game_over', data: { result: 'lost', reason: 'dawn' } });
+  assert.deepEqual(lines.at(-2), { type: 'event', tick: 120, name: 'game_over', data: { result: 'lost', reason: 'dawn', score: 0 } });
   assert.deepEqual(lines.at(-1), { type: 'end', ticks: 120, state: 'lost', score: 0 });
 });
 

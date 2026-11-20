@@ -38,6 +38,8 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--sky); color: var(--ink); }
     body { min-height: 320px; }
+    .colorblind { --danger: #FFFFFF; --shade-accent: #00B3FF; }
+    .colorblind .warning-cue::before { content: "⚠ "; }
     button, input { font: inherit; }
     button { cursor: pointer; }
     button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
@@ -47,9 +49,9 @@
     #hud { position: fixed; inset: 0 0 auto; z-index: 2; display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 12px; padding: max(14px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 0 max(18px, env(safe-area-inset-left)); pointer-events: none; }
     .hud-group { display: flex; align-items: center; gap: 8px; }
     .hud-right { justify-content: flex-end; }
-    .hud-chip { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 7px 13px; border: 1px solid var(--edge); border-radius: 12px; background: rgba(14, 20, 48, .78); box-shadow: 0 8px 28px rgba(0,0,0,.22); backdrop-filter: blur(8px); font-size: 13px; letter-spacing: .03em; }
-    .hud-chip strong { color: var(--lamp-core); font-variant-numeric: tabular-nums; font-size: 15px; }
-    .hud-label { color: rgba(245,241,230,.72); font-size: 10px; text-transform: uppercase; letter-spacing: .14em; }
+    .hud-chip { min-height: 48px; display: flex; align-items: center; gap: 9px; padding: 7px 13px; border: 1px solid var(--edge); border-radius: 12px; background: rgba(14, 20, 48, .78); box-shadow: 0 8px 28px rgba(0,0,0,.22); backdrop-filter: blur(8px); font-size: 18px; letter-spacing: .03em; }
+    .hud-chip strong { color: var(--lamp-core); font-variant-numeric: tabular-nums; font-size: 20px; }
+    .hud-label { color: rgba(245,241,230,.82); font-size: 18px; text-transform: uppercase; letter-spacing: .08em; }
     #timerChip { min-width: 112px; justify-content: center; flex-direction: column; gap: 0; border-color: rgba(255,233,176,.55); }
     #time { font-size: 23px; line-height: 1.1; color: var(--lamp-core); font-variant-numeric: tabular-nums; }
     #timerChip.alarm { border-color: var(--danger); color: var(--danger); animation: timer-blink 1s steps(2, start) infinite; }
@@ -60,24 +62,24 @@
     .flame.on { opacity: 1; filter: drop-shadow(0 0 6px rgba(255,179,71,.6)); }
     #targetArrow { position: fixed; z-index: 2; display: none; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px; align-items: center; justify-content: center; color: var(--gold); filter: drop-shadow(0 2px 8px #000); pointer-events: none; transform-origin: center; }
     #targetArrow svg { width: 42px; height: 42px; }
-    #prompt { position: fixed; z-index: 2; left: 50%; bottom: 116px; transform: translateX(-50%); display: none; max-width: min(90vw, 520px); padding: 11px 18px; border: 1px solid rgba(242,193,78,.65); border-radius: 10px; background: rgba(14,20,48,.9); color: var(--lamp-core); text-align: center; font-size: 15px; box-shadow: 0 8px 26px #0005; pointer-events: none; }
+    #prompt { position: fixed; z-index: 2; left: 50%; bottom: 116px; transform: translateX(-50%); display: none; max-width: min(90vw, 520px); padding: 11px 18px; border: 1px solid rgba(242,193,78,.65); border-radius: 10px; background: rgba(14,20,48,.9); color: var(--lamp-core); text-align: center; font-size: 18px; box-shadow: 0 8px 26px #0005; pointer-events: none; }
     #bottomHud { position: fixed; z-index: 2; inset: auto 0 max(16px, env(safe-area-inset-bottom)); display: flex; align-items: flex-end; justify-content: center; gap: 24px; padding: 0 18px; pointer-events: none; }
     .mote-meter { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .meter-label { color: var(--ink); font-size: 10px; text-transform: uppercase; letter-spacing: .16em; text-shadow: 0 1px 8px #000; }
+    .meter-label { color: var(--ink); font-size: 18px; text-transform: uppercase; letter-spacing: .1em; text-shadow: 0 1px 8px #000; }
     #moteCells { display: flex; gap: 5px; padding: 9px 12px; border: 1px solid rgba(255,229,138,.4); border-radius: 10px; background: rgba(14,20,48,.75); backdrop-filter: blur(8px); }
     .mote-cell { width: 16px; height: 22px; border: 1px solid rgba(255,246,194,.55); border-radius: 5px 5px 7px 7px; background: rgba(255,246,194,.08); }
     .mote-cell.on { border-color: var(--mote-core); background: radial-gradient(ellipse at 50% 35%, var(--mote-core), var(--mote-glow) 55%, rgba(255,229,138,.3)); box-shadow: 0 0 11px rgba(255,229,138,.62); }
     #cooldowns { display: flex; gap: 8px; }
     .cooldown { display: grid; grid-template-columns: 30px auto; align-items: center; gap: 8px; min-width: 126px; min-height: 48px; padding: 6px 10px; border: 1px solid rgba(242,193,78,.35); border-radius: 10px; background: rgba(14,20,48,.78); backdrop-filter: blur(8px); }
     .cooldown svg { width: 24px; height: 24px; color: var(--lamp); }
-    .cooldown strong { display: block; font-size: 12px; color: var(--ink); }
-    .cooldown small { display: block; color: rgba(245,241,230,.7); font-size: 10px; }
-    #hint { position: fixed; z-index: 2; right: 18px; bottom: 86px; max-width: 280px; color: rgba(245,241,230,.72); font-size: 11px; line-height: 1.55; text-align: right; text-shadow: 0 1px 5px #000; pointer-events: none; }
+    .cooldown strong { display: block; font-size: 18px; color: var(--ink); }
+    .cooldown small { display: block; color: rgba(245,241,230,.82); font-size: 18px; }
+    #hint { position: fixed; z-index: 2; right: 18px; bottom: 86px; max-width: 360px; color: rgba(245,241,230,.86); font-size: 18px; line-height: 1.4; text-align: right; text-shadow: 0 1px 5px #000; pointer-events: none; }
     #fps { position: fixed; z-index: 2; left: 12px; bottom: 10px; color: rgba(245,241,230,.65); font: 11px ui-monospace, monospace; pointer-events: none; }
     #touchControls { display: none; position: fixed; z-index: 3; inset: auto 12px max(12px, env(safe-area-inset-bottom)); justify-content: space-between; align-items: flex-end; pointer-events: none; }
     .touch-pad { display: grid; grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(2, 42px); gap: 5px; pointer-events: auto; }
     .touch-actions { display: grid; grid-template-columns: repeat(2, 48px); gap: 6px; pointer-events: auto; }
-    .touch-key { border: 1px solid #f2c14e77; border-radius: 12px; background: #0e1430c9; color: var(--ink); font-weight: 700; touch-action: none; user-select: none; }
+    .touch-key { border: 1px solid #f2c14e77; border-radius: 12px; background: #0e1430c9; color: var(--ink); font-size: 18px; font-weight: 700; touch-action: none; user-select: none; }
     .touch-key:active { background: #6b4a2f; }
     .touch-up { grid-column: 2; }.touch-left { grid-column: 1; grid-row: 2; }.touch-down { grid-column: 2; grid-row: 2; }.touch-right { grid-column: 3; grid-row: 2; }
 
@@ -85,31 +87,41 @@
     #screen.visible { display: flex; }
     .panel { width: min(100%, 560px); padding: clamp(24px, 5vw, 42px); border: 1px solid rgba(242,193,78,.55); border-radius: 22px; background: linear-gradient(145deg, rgba(27,35,80,.97), rgba(14,20,48,.98) 72%); box-shadow: 0 24px 90px rgba(0,0,0,.52), inset 0 1px rgba(255,255,255,.05); text-align: center; }
     .panel[hidden] { display: none; }
-    .eyebrow { margin: 0 0 10px; color: var(--gold); font-size: 11px; font-weight: 750; letter-spacing: .23em; text-transform: uppercase; }
+    .eyebrow { margin: 0 0 10px; color: var(--gold); font-size: 18px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
     .panel h1 { margin: 0; color: var(--lamp-core); font-family: "Segoe UI", system-ui, sans-serif; font-size: clamp(36px, 6vw, 58px); font-weight: 750; line-height: 1.05; letter-spacing: -.025em; text-shadow: 0 0 26px rgba(255,179,71,.16); }
     .panel h2 { margin: 0 0 12px; color: var(--lamp-core); font-family: "Segoe UI", system-ui, sans-serif; font-size: clamp(30px, 5vw, 44px); font-weight: 750; letter-spacing: -.025em; }
-    .panel p { max-width: 440px; margin: 14px auto 22px; color: rgba(245,241,230,.88); font-size: 15px; line-height: 1.65; }
+    .panel p { max-width: 440px; margin: 14px auto 22px; color: rgba(245,241,230,.92); font-size: 18px; line-height: 1.55; }
     .panel .story { padding: 14px 18px; border-left: 2px solid var(--gold); background: rgba(14,20,48,.55); color: var(--sand); text-align: left; font-family: Georgia, serif; font-style: italic; }
     .actions { display: grid; gap: 10px; margin: 24px auto 0; width: min(100%, 360px); }
-    .action { min-height: 48px; padding: 12px 18px; border: 1px solid rgba(242,193,78,.5); border-radius: 12px; background: rgba(18,56,74,.64); color: var(--ink); font-weight: 700; letter-spacing: .02em; transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease; }
+    .action { min-height: 48px; padding: 12px 18px; border: 1px solid rgba(242,193,78,.5); border-radius: 12px; background: rgba(18,56,74,.64); color: var(--ink); font-size: 18px; font-weight: 700; letter-spacing: .02em; transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease; }
     .action:hover { border-color: var(--gold); background: rgba(107,74,47,.72); }
     .action:active { transform: scale(.985); }
     .action.primary { border-color: var(--lamp); background: var(--lamp); color: #241a19; }
     .action.primary:hover { background: var(--lamp-core); }
     .action.subtle { border-color: transparent; background: transparent; color: rgba(245,241,230,.78); }
     .settings { display: grid; gap: 18px; margin: 24px 0; text-align: left; }
-    .setting { display: grid; gap: 8px; color: var(--ink); font-size: 14px; }
+    .setting { display: grid; gap: 8px; color: var(--ink); font-size: 18px; }
     .setting span { display: flex; justify-content: space-between; align-items: baseline; }
     .setting output { color: var(--lamp-core); font-variant-numeric: tabular-nums; }
     input[type="range"] { width: 100%; accent-color: var(--lamp); }
-    .setting-note { margin: 0!important; color: rgba(245,241,230,.68)!important; font-size: 12px!important; }
+    .setting-note { margin: 0!important; color: rgba(245,241,230,.82)!important; font-size: 18px!important; }
     .result-score { display: flex; justify-content: center; gap: 24px; margin: 22px 0; }
     .result-score div { display: grid; gap: 5px; min-width: 110px; }
     .result-score strong { color: var(--lamp-core); font-size: 25px; font-variant-numeric: tabular-nums; }
-    .result-score small { color: rgba(245,241,230,.7); font-size: 10px; text-transform: uppercase; letter-spacing: .14em; }
-    #toast { position: fixed; z-index: 4; top: 88px; left: 50%; transform: translateX(-50%); padding: 10px 16px; border: 1px solid var(--edge); border-radius: 12px; background: var(--panel); color: var(--lamp-core); opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
+    .result-score small { color: rgba(245,241,230,.82); font-size: 18px; text-transform: uppercase; letter-spacing: .08em; }
+    .binding-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 34vh; overflow: auto; text-align: left; }
+    .binding-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 8px; background: #0e143099; font-size: 18px; }
+    .binding-row button { min-width: 110px; min-height: 40px; border: 1px solid var(--edge); border-radius: 8px; background: #12384a; color: var(--ink); font-size: 18px; }
+    .leaderboard-list { width: 100%; border-collapse: collapse; text-align: left; font-size: 18px; }
+    .leaderboard-list td, .leaderboard-list th { padding: 7px 4px; border-bottom: 1px solid var(--edge); }
+    #fuelCue, #shadeCue { position: fixed; z-index: 3; top: 132px; left: 50%; transform: translateX(-50%); padding: 9px 14px; border: 1px solid var(--danger); border-radius: 10px; background: #0e1430ed; color: #fff; font-size: 18px; font-weight: 700; }
+    #shadeArrow { position: fixed; z-index: 3; display: none; left: 50%; top: 50%; color: var(--danger); font-size: 32px; text-shadow: 0 2px 8px #000; pointer-events: none; }
+    .large-text { font-size: 1.25em; }
+    .large-text .hud-label, .large-text .meter-label, .large-text .cooldown strong, .large-text .cooldown small, .large-text #hint { font-size: 1.25em; }
+    .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation: none!important; transition: none!important; }
+    #toast { position: fixed; z-index: 4; top: 88px; left: 50%; transform: translateX(-50%); padding: 10px 16px; border: 1px solid var(--edge); border-radius: 12px; background: var(--panel); color: var(--lamp-core); font-size: 18px; opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
     #toast.show { opacity: 1; }
-    #windCue { position: fixed; z-index: 2; top: 77px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid rgba(143,163,184,.65); border-radius: 999px; background: rgba(14,20,48,.88); color: #d3dce8; font-size: 12px; letter-spacing: .04em; box-shadow: 0 0 24px rgba(143,163,184,.18); pointer-events: none; }
+    #windCue { position: fixed; z-index: 2; top: 77px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid rgba(143,163,184,.65); border-radius: 999px; background: rgba(14,20,48,.88); color: #d3dce8; font-size: 18px; letter-spacing: .04em; box-shadow: 0 0 24px rgba(143,163,184,.18); pointer-events: none; }
     .wind-leaf { display: inline-flex; width: 18px; height: 18px; color: var(--drifter); opacity: 0; transform: translateX(-5px) rotate(-24deg); }
     .wind-leaf svg { width: 100%; height: 100%; }
     #windCue.warning .wind-leaf { opacity: 1; animation: leaf-drift .55s ease-in-out infinite alternate; }
@@ -130,15 +142,15 @@
       #hud .hud-left { grid-column: 1; grid-row: 1; }
       #hud #timerChip { grid-column: 2; grid-row: 1; }
       #hud .hud-right { grid-column: 1 / -1; grid-row: 2; justify-content: space-between; }
-      .hud-chip { min-height: 38px; padding: 6px 9px; gap: 6px; font-size: 11px; }
-      .hud-chip strong { font-size: 13px; }
+      .hud-chip { min-height: 42px; padding: 6px 9px; gap: 6px; font-size: 18px; }
+      .hud-chip strong { font-size: 18px; }
       #time { font-size: 19px; }
       #bottomHud { bottom: max(12px, env(safe-area-inset-bottom)); flex-direction: column; align-items: center; gap: 8px; }
       #cooldowns { gap: 5px; }
       .cooldown { min-width: 112px; min-height: 40px; padding: 5px 7px; }
       #hint { display: none; }
       #touchControls { display: flex; }
-      #prompt { bottom: 158px; font-size: 13px; }
+      #prompt { bottom: 158px; font-size: 18px; }
     }
     @media (max-width: 460px) {
       .hud-label { display: none; }
@@ -179,6 +191,9 @@
     <span id="windCueText"></span>
     <span class="wind-leaf trailing" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.5 3.5C12.2 3.8 5.5 6 3.7 12.2c-.8 2.8 1.5 6 4.4 6.4 6.6 1 11-7.2 12.4-15.1Z" fill="currentColor"/><path d="M5.2 19 16 8.5" fill="none" stroke="#F2C14E" stroke-width="1.3" stroke-linecap="round"/></svg></span>
   </div>
+  <div id="fuelCue" class="warning-cue" role="status" aria-live="polite" hidden>Đèn yếu · nhiên liệu dưới 30</div>
+  <div id="shadeCue" class="warning-cue" role="status" aria-live="polite" hidden>Bóng Mực xuất hiện</div>
+  <div id="shadeArrow" aria-hidden="true">▲</div>
   <div id="targetArrow" role="img" aria-label="Hướng tới đèn lồng chưa thắp">
     <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3 42 40 24 31 6 40 24 3Z" fill="currentColor" stroke="#0E1430" stroke-width="2" stroke-linejoin="round"/><circle cx="24" cy="23" r="3" fill="#FFE9B0"/></svg>
   </div>
@@ -224,6 +239,7 @@
       <p>Mây gom đom đóm, thắp lại những ngọn đèn lớn và đưa ánh sáng trở về các hòn đảo trên mây.</p>
       <div class="actions">
         <button class="action primary" data-action="start">Bắt đầu hành trình</button>
+        <button class="action" data-action="leaderboard">Bảng xếp hạng</button>
         <button class="action" data-action="settings">Cài đặt</button>
       </div>
     </section>
@@ -260,11 +276,20 @@
           <span>Độ nhạy chuột <output id="sensitivityValue">60%</output></span>
           <input id="sensitivity" type="range" min="20" max="150" value="60" />
         </label>
+        <div class="setting"><span>Điều khiển</span><div id="bindingList" class="binding-list"></div><span id="bindingMessage" role="status" aria-live="polite"></span><button class="action subtle" type="button" data-action="reset-bindings">Khôi phục mặc định</button></div>
+        <label class="setting"><span><input id="reduceMotion" type="checkbox" /> Giảm chuyển động</span></label>
+        <label class="setting"><span><input id="largeText" type="checkbox" /> Chữ lớn (×1.25)</span></label>
+        <label class="setting"><span><input id="colorblindPalette" type="checkbox" /> Bảng màu dễ phân biệt</span></label>
         <p class="setting-note">Cài đặt được lưu trên thiết bị này.</p>
       </div>
       <div class="actions">
         <button class="action primary" data-action="settings-back">Hoàn tất</button>
       </div>
+    </section>
+    <section class="panel" id="leaderboardPanel" hidden>
+      <p class="eyebrow">Bảng xếp hạng trên thiết bị này</p><h2>Bảng xếp hạng</h2>
+      <div id="leaderboardContent"></div>
+      <div class="actions"><button class="action primary" data-action="leaderboard-back">Về menu</button></div>
     </section>
     <section class="panel" id="resultPanel" hidden>
       <p class="eyebrow" id="resultEyebrow">Kết quả Đêm 1</p>
@@ -274,6 +299,10 @@
         <div><strong id="nightScore">0</strong><small>Điểm đêm này</small></div>
         <div><strong id="totalScore">0</strong><small>Tổng hành trình</small></div>
       </div>
+      <form id="scoreForm" hidden>
+        <label class="setting" for="playerName">Lưu điểm · tên 3–12 ký tự (chữ Latin, 0–9, _)<input id="playerName" name="playerName" minlength="3" maxlength="12" pattern="[\p{Script=Latin}0-9_]{3,12}" autocomplete="nickname" required /></label>
+        <p id="scoreMessage" role="status" aria-live="polite"></p><button class="action primary" type="submit">Lưu vào bảng xếp hạng</button>
+      </form>
       <div class="actions" id="resultActions"></div>
     </section>
   </main>

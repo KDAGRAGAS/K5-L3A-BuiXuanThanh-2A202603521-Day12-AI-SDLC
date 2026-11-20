@@ -2,6 +2,9 @@
 import * as THREE from 'three';
 import { Game } from '../src/core/game.js';
 import { TUNING, WORLD, TICK_RATE } from '../src/core/config.js';
+import { MAPS } from '../src/core/maps.js';
+import { rankEntries, validLeaderboardName } from '../src/core/leaderboard.js';
+import { makeBenchmarkScenario } from '../src/core/benchmark.js';
 
 const $ = (id) => document.getElementById(id);
 const COLORS = {
@@ -18,6 +21,13 @@ const STORIES = {
   3: '“Đảo Chuông có ba tầng và một ngọn gió đổi chiều. Đi theo hai con dốc, dùng bục ở tầng trên, rồi tìm những chiếc đèn cuối cùng.” — Ông Đăng',
 };
 const STEP = 1 / TICK_RATE;
+const benchQuery = new URLSearchParams(location.search);
+const BENCH_MODE = benchQuery.has('bench');
+const BENCH_DURATION = Math.max(1, Math.min(300, Number(benchQuery.get('bench')) || 30));
+let benchStartedAt = 0;
+let benchLoadMs = null;
+let benchDeltas = [];
+let benchComplete = false;
 const clockText = (seconds) => {
   const n = Math.max(0, Math.ceil(seconds));
   return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
@@ -75,6 +85,12 @@ let lastWarningTick = -1;
 let lastCountdown = null;
 let toastTimeout = 0;
 let fpsSamples = [];
+const DEFAULT_BINDINGS = { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space', dash: 'ShiftLeft', interact: 'KeyE', pulse: 'KeyQ', pause: 'Escape' };
+let bindings = { ...DEFAULT_BINDINGS };
+let bindingCapture = null;
+let leaderboardEntries = [];
+let latestShadesVisible = false;
+let lastLowFuelCue = false;
 
 const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.9, ...extra });
 const setTopDisk = (radius, y, material, group = worldGroup, segments = 72, cx = 0, cz = 0) => {
@@ -195,12 +211,13 @@ function makeJumpPad(pad) {
 function makeWorld(night) {
   clearWorld();
   currentNight = night;
-  const world = WORLD[`night${night}`];
+  const world = MAPS[night];
+  if (BENCH_MODE) worldGroup.add(benchMoteInstances, benchShadeBodyInstances, benchShadeEyeLeftInstances, benchShadeEyeRightInstances);
   const islandColor = night === 2 ? COLORS.grass : 0x365d4b;
-  for (const island of world.islands) makeIsland(island.center[0], island.center[1], island.radius, islandColor);
-  if (night === 2) makeBridge();
+  for (const island of world.islands) makeIsland(island.center[0], island.center[2], island.radius, islandColor);
+  if (world.bridges.length) makeBridge();
   if (night === 3) makeNight3Layers();
-  for (const pad of world.jump_pads) makeJumpPad(pad);
+  for (const pad of world.jumpPads) makeJumpPad(pad);
 
   const cloudSea = new THREE.Mesh(new THREE.CircleGeometry(260, 48), mat(COLORS.cloud, { roughness: 1 }));
   cloudSea.rotation.x = -Math.PI / 2;
@@ -217,21 +234,14 @@ function makeWorld(night) {
     } else addRock(radius * Math.sin(a), radius * Math.cos(a), 0.3 + (i % 4) * 0.14, 0x426452);
   }
 
-  for (const point of world.mote_rings.flatMap((ring) => {
-    const out = [];
-    for (const deg of ring.angles) {
-      const a = (deg * Math.PI) / 180;
-      out.push([ring.center[0] + ring.radius * Math.cos(a), ring.y, ring.center[1] + ring.radius * Math.sin(a)]);
-    }
-    return out;
-  })) {
+  for (const point of world.moteSpawns) {
     const flower = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), mat(0xb7c58b, { emissive: 0x536d45, emissiveIntensity: 0.2 }));
     flower.position.set(point[0], point[1] + 0.08, point[2]);
     flower.scale.set(1, 0.4, 1);
     worldGroup.add(flower);
   }
 
-  for (const lantern of world.lanterns.map((pos, i) => ({ id: `L${i + 1}`, pos }))) {
+  for (const lantern of world.lanterns) {
     const view = makeLantern(lantern.pos[1]);
     view.group.position.set(lantern.pos[0], lantern.pos[1], lantern.pos[2]);
     worldGroup.add(view.group);
@@ -249,13 +259,15 @@ function makeLantern(y) {
   const shell = new THREE.Mesh(new THREE.SphereGeometry(0.72, 18, 12), shellMaterial);
   shell.scale.y = 1.1;
   shell.position.y = 3.55;
+  const tear = new THREE.Mesh(new THREE.TetrahedronGeometry(0.14), mat(0x211b25));
+  tear.position.set(0, 3.55, 0.68);
   const light = new THREE.PointLight(COLORS.lamp, 0, 15, 1.6);
   light.position.y = 3.6;
   const ring = new THREE.Mesh(new THREE.RingGeometry(TUNING.safe_radius - 0.1, TUNING.safe_radius, 64), new THREE.MeshBasicMaterial({ color: COLORS.lamp, transparent: true, opacity: 0, side: THREE.DoubleSide }));
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.04;
-  group.add(post, shell, light, ring);
-  return { group, shellMaterial, light, ring, y };
+  group.add(post, shell, light, ring, tear);
+  return { group, shell, shellMaterial, light, ring, tear, y };
 }
 
 function makeMay() {
@@ -286,7 +298,15 @@ const moteMaterial = mat(COLORS.mote, { emissive: COLORS.moteGlow, emissiveInten
 const droppedMaterial = mat(0xffd77a, { emissive: 0xffa840, emissiveIntensity: 1.25, roughness: 0.6 });
 const shadeGeo = new THREE.SphereGeometry(0.82, 16, 12);
 const shadeMaterial = mat(COLORS.shade, { emissive: COLORS.shadeEdge, emissiveIntensity: 0.28, roughness: 0.3 });
+const shadeEyeGeo = new THREE.SphereGeometry(0.07, 8, 6);
+const shadeEyeMaterial = new THREE.MeshBasicMaterial({ color: 0xc6a5ff });
 const stunMaterial = mat(COLORS.stunned, { emissive: 0x7d78b1, emissiveIntensity: 0.65 });
+const benchMoteInstances = new THREE.InstancedMesh(moteGeo, moteMaterial, 100);
+const benchShadeBodyInstances = new THREE.InstancedMesh(shadeGeo, shadeMaterial, 200);
+const benchShadeEyeLeftInstances = new THREE.InstancedMesh(shadeEyeGeo, shadeEyeMaterial, 200);
+const benchShadeEyeRightInstances = new THREE.InstancedMesh(shadeEyeGeo, shadeEyeMaterial, 200);
+for (const instances of [benchMoteInstances, benchShadeBodyInstances, benchShadeEyeLeftInstances, benchShadeEyeRightInstances]) instances.frustumCulled = false;
+const benchInstanceObject = new THREE.Object3D();
 const carriedLights = [];
 for (let i = 0; i < TUNING.carry_capacity; i++) {
   const mesh = new THREE.Mesh(moteGeo, moteMaterial);
@@ -356,7 +376,21 @@ function syncViews(map, list, make, parent = worldGroup) {
 
 const keys = new Set();
 addEventListener('keydown', (event) => {
-  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
+  if (bindingCapture) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.code === 'Escape') { bindingCapture = null; renderBindings(); return; }
+    const conflict = Object.entries(bindings).find(([action, code]) => code === event.code && action !== bindingCapture);
+    if (conflict) { $('bindingMessage').textContent = `Phím đã dùng cho ${bindingLabel(conflict[0])}. Chọn phím khác.`; return; }
+    bindings[bindingCapture] = event.code;
+    const action = bindingCapture;
+    bindingCapture = null;
+    keys.clear();
+    $('bindingMessage').textContent = `Đã đổi ${bindingLabel(action)} thành ${keyLabel(event.code)}.`;
+    saveSettings(); renderBindings();
+    return;
+  }
+  if ([...Object.values(bindings), 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
   keys.add(event.code);
 });
 addEventListener('keyup', (event) => keys.delete(event.code));
@@ -386,17 +420,35 @@ for (const button of document.querySelectorAll('[data-touch-key]')) {
 function readInput() {
   let mx = 0;
   let mz = 0;
-  if (keys.has('KeyA')) mx += 1;
-  if (keys.has('KeyD')) mx -= 1;
-  if (keys.has('KeyW') || keys.has('ArrowUp')) mz += 1;
-  if (keys.has('KeyS') || keys.has('ArrowDown')) mz -= 1;
-  const pause = pauseRequest || keys.has('KeyP') || keys.has('Escape');
+  if (keys.has(bindings.left)) mx += 1;
+  if (keys.has(bindings.right)) mx -= 1;
+  if (keys.has(bindings.up)) mz += 1;
+  if (keys.has(bindings.down)) mz -= 1;
+  const pause = pauseRequest || keys.has(bindings.pause);
   pauseRequest = false;
   return {
     move: [mx, mz], cam_yaw_deg: (cameraYaw * 180) / Math.PI,
-    jump: keys.has('Space'), dash: keys.has('ShiftLeft') || keys.has('ShiftRight'),
-    interact: keys.has('KeyE'), pulse: keys.has('KeyQ'), pause,
+    jump: keys.has(bindings.jump), dash: keys.has(bindings.dash),
+    interact: keys.has(bindings.interact), pulse: keys.has(bindings.pulse), pause,
   };
+}
+
+const BINDING_LABELS = { up: 'Tiến', down: 'Lùi', left: 'Trái', right: 'Phải', jump: 'Nhảy', dash: 'Lướt', interact: 'Tương tác', pulse: 'Tỏa sáng', pause: 'Tạm dừng' };
+function bindingLabel(action) { return BINDING_LABELS[action]; }
+function keyLabel(code) { return ({ Space: 'Space', Escape: 'Esc', ShiftLeft: 'Shift trái', ShiftRight: 'Shift phải', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' })[code] ?? code.replace(/^Key/, '').replace(/^Digit/, ''); }
+function renderBindings() {
+  const host = $('bindingList');
+  if (!host) return;
+  host.replaceChildren();
+  for (const [action, code] of Object.entries(bindings)) {
+    const row = document.createElement('div'); row.className = 'binding-row';
+    const label = document.createElement('span'); label.textContent = bindingLabel(action);
+    const button = document.createElement('button'); button.type = 'button';
+    button.textContent = bindingCapture === action ? 'Nhấn phím…' : keyLabel(code);
+    button.setAttribute('aria-label', `Đổi phím ${bindingLabel(action)} (hiện ${keyLabel(code)})`);
+    button.addEventListener('click', () => { bindingCapture = action; $('bindingMessage').textContent = `Nhấn phím mới cho ${bindingLabel(action)}; Esc để hủy.`; renderBindings(); });
+    row.append(label, button); host.append(row);
+  }
 }
 
 function loadSettings() {
@@ -404,21 +456,89 @@ function loadSettings() {
     const data = JSON.parse(localStorage.getItem('dao-den-long-settings') ?? '{}');
     if (Number.isFinite(data.volume)) $('volume').value = String(Math.max(0, Math.min(100, data.volume)));
     if (Number.isFinite(data.sensitivity)) $('sensitivity').value = String(Math.max(20, Math.min(150, data.sensitivity)));
+    if (data.bindings && Object.keys(DEFAULT_BINDINGS).every((action) => typeof data.bindings[action] === 'string')) bindings = { ...data.bindings };
+    $('reduceMotion').checked = data.reduceMotion === true;
+    $('largeText').checked = data.largeText === true;
+    $('colorblindPalette').checked = data.colorblindPalette === true;
   } catch { /* storage is optional */ }
+  document.body.classList.toggle('reduce-motion', $('reduceMotion').checked);
+  document.documentElement.classList.toggle('large-text', $('largeText').checked);
+  applyVisualSettings();
+  renderBindings();
   updateSettingsLabels();
 }
 function getSensitivity() { return Number($('sensitivity').value) / 30000; }
 function saveSettings() {
   try {
-    localStorage.setItem('dao-den-long-settings', JSON.stringify({ volume: Number($('volume').value), sensitivity: Number($('sensitivity').value) }));
+    localStorage.setItem('dao-den-long-settings', JSON.stringify({ volume: Number($('volume').value), sensitivity: Number($('sensitivity').value), bindings, reduceMotion: $('reduceMotion').checked, largeText: $('largeText').checked, colorblindPalette: $('colorblindPalette').checked }));
   } catch { /* storage is optional */ }
   updateSettingsLabels();
   sound.setVolume(Number($('volume').value) / 100);
+}
+for (const id of ['volume', 'sensitivity']) $(id).addEventListener('input', saveSettings);
+$('reduceMotion').addEventListener('change', () => { document.body.classList.toggle('reduce-motion', $('reduceMotion').checked); saveSettings(); });
+$('largeText').addEventListener('change', () => { document.documentElement.classList.toggle('large-text', $('largeText').checked); saveSettings(); });
+$('colorblindPalette').addEventListener('change', () => { applyVisualSettings(); saveSettings(); });
+function applyVisualSettings() {
+  const enabled = !BENCH_MODE && $('colorblindPalette')?.checked === true;
+  document.body.classList.toggle('colorblind', enabled);
+  shadeMaterial.color.setHex(enabled ? 0x00b3ff : COLORS.shade);
+  shadeMaterial.emissive.setHex(enabled ? 0x00b3ff : COLORS.shadeEdge);
+  shadeEyeMaterial.color.setHex(enabled ? 0x00b3ff : 0xc6a5ff);
 }
 function updateSettingsLabels() {
   $('volumeValue').value = `${$('volume').value}%`;
   $('sensitivityValue').value = `${$('sensitivity').value}%`;
 }
+
+async function refreshLeaderboard() {
+  try {
+    const response = await fetch('/api/leaderboard', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Không đọc được bảng xếp hạng');
+    leaderboardEntries = rankEntries((await response.json()).entries ?? []);
+  } catch {
+    leaderboardEntries = [];
+  }
+}
+async function showLeaderboard() {
+  await refreshLeaderboard();
+  const host = $('leaderboardContent'); host.replaceChildren();
+  if (!leaderboardEntries.length) {
+    const empty = document.createElement('p'); empty.textContent = 'Chưa có điểm được lưu trên thiết bị này.'; host.append(empty);
+  } else {
+    const table = document.createElement('table'); table.className = 'leaderboard-list';
+    const head = document.createElement('thead'); head.innerHTML = '<tr><th>#</th><th>Tên</th><th>Điểm</th><th>Đêm</th></tr>';
+    const body = document.createElement('tbody');
+    leaderboardEntries.forEach((entry, index) => {
+      const row = document.createElement('tr');
+      for (const value of [index + 1, entry.name, entry.score.toLocaleString('vi-VN'), entry.nights_won]) {
+        const cell = document.createElement('td'); cell.textContent = String(value); row.append(cell);
+      }
+      body.append(row);
+    });
+    table.append(head, body); host.append(table);
+  }
+  openPanel('leaderboardPanel');
+}
+async function saveScore() {
+  const name = $('playerName').value.trim().normalize('NFC');
+  if (!validLeaderboardName(name)) { $('scoreMessage').textContent = 'Tên cần 3–12 ký tự chữ Latin (có thể dùng dấu), số hoặc gạch dưới.'; return; }
+  const entry = {
+    name, score: totalScore,
+    nights_won: Math.max(0, Math.min(3, currentNight - (game?.state === 'won' ? 0 : 1))),
+    achieved_at: new Date().toISOString(), seed: runSeed,
+  };
+  try {
+    const response = await fetch('/api/leaderboard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entry }) });
+    if (!response.ok) throw new Error('Không thể lưu');
+    leaderboardEntries = rankEntries((await response.json()).entries ?? []);
+    $('scoreMessage').textContent = 'Đã lưu điểm trên thiết bị này.';
+    $('scoreForm').hidden = true;
+  } catch {
+    $('scoreMessage').textContent = 'Chưa lưu được. Hãy chạy game bằng npm start rồi thử lại.';
+  }
+}
+$('scoreForm').addEventListener('submit', (event) => { event.preventDefault(); saveScore(); });
 
 const sound = {
   context: null, master: null, drone: null, droneGain: null,
@@ -497,9 +617,6 @@ const sound = {
 };
 
 loadSettings();
-$('volume').addEventListener('input', saveSettings);
-$('sensitivity').addEventListener('input', updateSettingsLabels);
-$('sensitivity').addEventListener('change', saveSettings);
 
 function showToast(message, duration = 1900) {
   $('toast').textContent = message;
@@ -539,7 +656,9 @@ function openNightIntro(night) {
 function startNight(night) {
   currentNight = night;
   sound.stopNight();
-  game = new Game({ seed: (runSeed + night * 9973) >>> 0, night });
+  game = BENCH_MODE
+    ? new Game({ seed: Number(benchQuery.get('seed')) || 42, night: 1, scenario: makeBenchmarkScenario(Number(benchQuery.get('seed')) || 42) })
+    : new Game({ seed: (runSeed + night * 9973) >>> 0, night });
   resultHandled = false;
   started = true;
   document.body.classList.add('in-game');
@@ -549,7 +668,7 @@ function startNight(night) {
   pulseAge = 99;
   makeWorld(night);
   cameraYaw = 0;
-  sound.startNight(night);
+  if (!BENCH_MODE) sound.startNight(night);
   closePanel();
   updateHud();
 }
@@ -585,6 +704,9 @@ function handleAction(action) {
     case 'play-night': startNight(currentNight); break;
     case 'settings': showSettings(); break;
     case 'settings-back': settingsBack(); break;
+    case 'leaderboard': showLeaderboard(); break;
+    case 'leaderboard-back': openPanel('menuPanel'); break;
+    case 'reset-bindings': bindings = { ...DEFAULT_BINDINGS }; bindingCapture = null; $('bindingMessage').textContent = 'Đã khôi phục phím mặc định.'; keys.clear(); saveSettings(); renderBindings(); break;
     case 'continue': continueNight(); break;
     case 'restart': restartNight(); break;
     case 'menu': goToMenu(); break;
@@ -605,6 +727,9 @@ function handleGameOver() {
   $('resultEyebrow').textContent = `Kết quả Đêm ${currentNight} · ${ISLANDS[currentNight]}`;
   $('nightScore').textContent = game.score.toLocaleString('vi-VN');
   $('totalScore').textContent = totalScore.toLocaleString('vi-VN');
+  $('scoreForm').hidden = !(game.state === 'lost' || currentNight === 3);
+  $('scoreMessage').textContent = '';
+  $('playerName').value = '';
   const actions = $('resultActions');
   actions.replaceChildren();
   if (game.state === 'lost') {
@@ -680,6 +805,7 @@ function updateHud() {
   $('score').textContent = game.score.toLocaleString('vi-VN');
   const time = Math.max(0, game.timeLeft);
   $('time').textContent = clockText(time);
+  $('timerChip').setAttribute('aria-live', time <= 10 ? 'polite' : 'off');
   $('timerChip').classList.toggle('alarm', time <= 30);
   $('pulse').textContent = p.pulseCdTicks > 0
     ? `${(p.pulseCdTicks / TICK_RATE).toFixed(1)} giây`
@@ -697,6 +823,11 @@ function updateHud() {
   }
   [...cells.children].forEach((cell, index) => cell.classList.toggle('on', index < p.carried));
 
+  const lowFuel = game.lanterns.some((lantern) => lantern.lit && lantern.fuel < TUNING.low_fuel_threshold);
+  $('fuelCue').hidden = !lowFuel;
+  if (lowFuel && !lastLowFuelCue) showToast('Có đèn dưới 30 nhiên liệu');
+  lastLowFuelCue = lowFuel;
+
   const near = [...game.lanterns]
     .filter((l) => !l.lit && Math.hypot(l.pos[0] - p.pos[0], l.pos[1] - p.pos[1], l.pos[2] - p.pos[2]) <= TUNING.interact_radius)
     .sort((a, b) => Math.hypot(a.pos[0] - p.pos[0], a.pos[1] - p.pos[1], a.pos[2] - p.pos[2]) - Math.hypot(b.pos[0] - p.pos[0], b.pos[1] - p.pos[1], b.pos[2] - p.pos[2]) || a.id.localeCompare(b.id))[0];
@@ -710,8 +841,23 @@ function updateHud() {
 }
 
 function updateTargetArrow() {
-  if (!game || !started) { $('targetArrow').style.display = 'none'; return; }
+  if (!game || !started) { $('targetArrow').style.display = 'none'; $('shadeCue').hidden = true; $('shadeArrow').style.display = 'none'; return; }
   const p = game.player;
+  const nearestShade = game.shades.filter((shade) => !['stunned', 'spawning'].includes(shade.state))
+    .sort((a, b) => Math.hypot(a.pos[0] - p.pos[0], a.pos[2] - p.pos[2]) - Math.hypot(b.pos[0] - p.pos[0], b.pos[2] - p.pos[2]))[0];
+  $('shadeCue').hidden = !nearestShade;
+  if (nearestShade) {
+    const shadePoint = new THREE.Vector3(nearestShade.pos[0], nearestShade.pos[1] + 1, nearestShade.pos[2]).project(camera);
+    const outside = Math.abs(shadePoint.x) > 0.82 || Math.abs(shadePoint.y) > 0.82 || shadePoint.z > 1;
+    const arrow = $('shadeArrow'); arrow.style.display = outside ? 'block' : 'none';
+    if (outside) {
+      const x = shadePoint.x * (shadePoint.z > 1 ? -1 : 1);
+      const y = -shadePoint.y * (shadePoint.z > 1 ? -1 : 1);
+      arrow.style.left = `${Math.min(innerWidth - 28, Math.max(28, innerWidth * (0.5 + x * 0.42)))}px`;
+      arrow.style.top = `${Math.min(innerHeight - 28, Math.max(28, innerHeight * (0.5 + y * 0.42)))}px`;
+      arrow.style.transform = `translate(-50%, -50%) rotate(${Math.atan2(y, x) * 180 / Math.PI + 90}deg)`;
+    }
+  } else $('shadeArrow').style.display = 'none';
   const target = [...game.lanterns].filter((l) => !l.lit)
     .sort((a, b) => Math.hypot(a.pos[0] - p.pos[0], a.pos[1] - p.pos[1], a.pos[2] - p.pos[2]) - Math.hypot(b.pos[0] - p.pos[0], b.pos[1] - p.pos[1], b.pos[2] - p.pos[2]) || a.id.localeCompare(b.id))[0];
   if (!target) { $('targetArrow').style.display = 'none'; return; }
@@ -730,7 +876,7 @@ function updateScene(now, dt) {
   const p = game.player;
   may.position.set(p.pos[0], p.pos[1], p.pos[2]);
   may.rotation.y = p.facing;
-  may.visible = !(p.invulnTicks > 0 && Math.floor(now * 10) % 2 === 0);
+  may.visible = document.body.classList.contains('reduce-motion') || !(p.invulnTicks > 0 && Math.floor(now * 10) % 2 === 0);
   playerGlow.position.set(p.pos[0], p.pos[1] + 1.3, p.pos[2]);
 
   const lit = game.lanterns.filter((l) => l.lit).length;
@@ -744,27 +890,59 @@ function updateScene(now, dt) {
     const view = lanternViews.get(lantern.id);
     if (!view) continue;
     const fill = lantern.lit ? 1 : lantern.deposited / TUNING.lantern_cost;
-    view.shellMaterial.emissiveIntensity = lantern.lit ? 2.1 + 0.18 * Math.sin(now * 2.4) : 0.03 + fill * 0.9;
-    view.light.intensity = lantern.lit ? 24 : 0;
-    view.ring.material.opacity = lantern.lit ? 0.26 : 0;
+    const lowFuel = lantern.lit && lantern.fuel < TUNING.low_fuel_threshold;
+    const blink = lowFuel && Math.floor(now * 2) % 2 === 0;
+    view.shell.scale.y = lantern.lit ? 1.1 : 0.88;
+    view.tear.visible = !lantern.lit;
+    view.shellMaterial.emissiveIntensity = lantern.lit ? (blink ? 0.25 : 2.1 + 0.18 * Math.sin(now * 2.4)) : 0.03 + fill * 0.9;
+    view.light.intensity = lantern.lit ? (blink ? 6 : 24) : 0;
+    view.ring.material.opacity = lantern.lit ? (blink ? 0.08 : 0.26) : 0;
   }
 
-  syncViews(moteViews, game.motes, (mote) => makeMote());
-  for (const mote of game.motes) {
-    const view = moteViews.get(mote.id);
-    view.position.set(mote.pos[0], mote.pos[1] + 0.5 + Math.sin(now * 2.6 + Number(mote.id.slice(1))) * 0.12, mote.pos[2]);
-    const mesh = view.children[0];
-    mesh.material = mote.kind === 'dropped' ? droppedMaterial : moteMaterial;
-    if (mote.kind === 'dropped') view.intensity = Math.max(0.1, 0.65 * Math.min(1, mote.ttl_s / 1.5));
-  }
-
-  syncViews(shadeViews, game.shades, () => makeShade());
-  for (const shade of game.shades) {
-    const view = shadeViews.get(shade.id);
-    view.position.set(shade.pos[0], shade.pos[1] + Math.sin(now * 3.3 + shade.pos[0]) * 0.12, shade.pos[2]);
-    const body = view.children.find((child) => child.isMesh && child.geometry === shadeGeo);
-    if (body) body.material = shade.state === 'stunned' ? stunMaterial : shadeMaterial;
-    view.scale.setScalar(shade.state === 'spawning' ? 0.65 + 0.35 * Math.sin(now * 10) ** 2 : 1 + 0.045 * Math.sin(now * 5));
+  if (BENCH_MODE) {
+    benchMoteInstances.count = game.motes.length;
+    game.motes.forEach((mote, index) => {
+      benchInstanceObject.position.set(mote.pos[0], mote.pos[1] + 0.5 + Math.sin(now * 2.6 + index) * 0.12, mote.pos[2]);
+      benchInstanceObject.scale.setScalar(1);
+      benchInstanceObject.updateMatrix();
+      benchMoteInstances.setMatrixAt(index, benchInstanceObject.matrix);
+    });
+    benchMoteInstances.instanceMatrix.needsUpdate = true;
+    benchShadeBodyInstances.count = game.shades.length;
+    benchShadeEyeLeftInstances.count = game.shades.length;
+    benchShadeEyeRightInstances.count = game.shades.length;
+    game.shades.forEach((shade, index) => {
+      const bob = Math.sin(now * 3.3 + shade.pos[0]) * 0.12;
+      benchInstanceObject.position.set(shade.pos[0], shade.pos[1] + bob, shade.pos[2]);
+      benchInstanceObject.scale.set(1, 1.22, 0.88);
+      benchInstanceObject.updateMatrix();
+      benchShadeBodyInstances.setMatrixAt(index, benchInstanceObject.matrix);
+      benchInstanceObject.scale.setScalar(1);
+      benchInstanceObject.position.set(shade.pos[0] - 0.22, shade.pos[1] + bob + 0.08, shade.pos[2] + 0.72);
+      benchInstanceObject.updateMatrix();
+      benchShadeEyeLeftInstances.setMatrixAt(index, benchInstanceObject.matrix);
+      benchInstanceObject.position.x = shade.pos[0] + 0.22;
+      benchInstanceObject.updateMatrix();
+      benchShadeEyeRightInstances.setMatrixAt(index, benchInstanceObject.matrix);
+    });
+    for (const instances of [benchShadeBodyInstances, benchShadeEyeLeftInstances, benchShadeEyeRightInstances]) instances.instanceMatrix.needsUpdate = true;
+  } else {
+    syncViews(moteViews, game.motes, () => makeMote());
+    for (const mote of game.motes) {
+      const view = moteViews.get(mote.id);
+      view.position.set(mote.pos[0], mote.pos[1] + 0.5 + Math.sin(now * 2.6 + Number(mote.id.slice(1))) * 0.12, mote.pos[2]);
+      const mesh = view.children[0];
+      mesh.material = mote.kind === 'dropped' ? droppedMaterial : moteMaterial;
+      if (mote.kind === 'dropped') view.intensity = Math.max(0.1, 0.65 * Math.min(1, mote.ttl_s / 1.5));
+    }
+    syncViews(shadeViews, game.shades, () => makeShade());
+    for (const shade of game.shades) {
+      const view = shadeViews.get(shade.id);
+      view.position.set(shade.pos[0], shade.pos[1] + Math.sin(now * 3.3 + shade.pos[0]) * 0.12, shade.pos[2]);
+      const body = view.children.find((child) => child.isMesh && child.geometry === shadeGeo);
+      if (body) body.material = shade.state === 'stunned' ? stunMaterial : shadeMaterial;
+      view.scale.setScalar(shade.state === 'spawning' ? 0.65 + 0.35 * Math.sin(now * 10) ** 2 : 1 + 0.045 * Math.sin(now * 5));
+    }
   }
 
   syncViews(drifterViews, game.drifters, () => makeDrifter());
@@ -821,14 +999,18 @@ function updateWindCue() {
 
 function frame(nowMs) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.1, (nowMs - lastFrame) / 1000);
+  const frameInterval = Math.max(0, (nowMs - lastFrame) / 1000);
+  const dt = Math.min(0.1, frameInterval);
   lastFrame = nowMs;
   const now = nowMs / 1000;
 
   if (keys.has('ArrowLeft')) cameraYaw += dt * 1.8;
   if (keys.has('ArrowRight')) cameraYaw -= dt * 1.8;
 
-  if (started && game && game.state === 'playing') {
+  if (BENCH_MODE && started && game && game.state === 'playing') {
+    acc += dt;
+    while (acc >= STEP) { game.step(); game.drainEvents(); acc -= STEP; }
+  } else if (started && game && game.state === 'playing') {
     acc += dt;
     while (acc >= STEP) {
       const before = game.timeLeft;
@@ -850,6 +1032,39 @@ function frame(nowMs) {
 
   if (game) {
     updateScene(now, dt);
+    if (BENCH_MODE) {
+      if (benchLoadMs === null) {
+        benchLoadMs = performance.now();
+        benchStartedAt = nowMs;
+      }
+      const elapsed = Math.max(0, (nowMs - benchStartedAt) / 1000);
+      const angle = (elapsed * Math.PI * 2) / 15;
+      camera.position.set(30 * Math.cos(angle), 15, 30 * Math.sin(angle));
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld();
+      if (elapsed >= 3 && elapsed < 3 + BENCH_DURATION && frameInterval > 0) benchDeltas.push(frameInterval * 1000);
+      if (!benchComplete && elapsed >= 3 + BENCH_DURATION) {
+        benchComplete = true;
+        const ordered = [...benchDeltas].sort((a, b) => a - b);
+        const slowCount = Math.max(1, Math.ceil(ordered.length * 0.01));
+        const slowMean = ordered.slice(-slowCount).reduce((sum, value) => sum + value, 0) / slowCount;
+        const debug = renderer.getContext().getExtension('WEBGL_debug_renderer_info');
+        const result = {
+          contract_version: '1.3',
+          avg_fps: Number((1000 * ordered.length / Math.max(1e-9, ordered.reduce((sum, value) => sum + value, 0))).toFixed(1)),
+          p1_low_fps: Number((1000 / slowMean).toFixed(1)),
+          frame_ms_p95: Number(ordered[Math.max(0, Math.ceil(ordered.length * 0.95) - 1)]?.toFixed(2) ?? 0),
+          frames: ordered.length,
+          load_ms: Math.round(benchLoadMs),
+          peak_mem_mb: null,
+          vsync_off: true,
+          renderer: `Three.js r${THREE.REVISION} · ${debug ? renderer.getContext().getParameter(debug.UNMASKED_RENDERER_WEBGL) : renderer.getContext().getParameter(renderer.getContext().RENDERER)}`,
+          os: navigator.userAgent,
+        };
+        window.__benchResult = result;
+        window.dispatchEvent(new CustomEvent('benchmark-complete', { detail: result }));
+      }
+    }
     updateHud();
     updateWindCue();
   } else {
@@ -870,11 +1085,17 @@ requestAnimationFrame(frame);
 
 makeWorld(1);
 document.addEventListener('keydown', (event) => {
-  if (event.code === 'Escape' && $('screen').classList.contains('visible') && !$('settingsPanel').hidden) {
+  if (event.code === 'Escape' && !bindingCapture && $('screen').classList.contains('visible') && !$('settingsPanel').hidden) {
     event.preventDefault();
     event.stopPropagation();
     settingsBack();
     return;
   }
-  if (event.code === 'Space' && !event.repeat && started && game && !game.paused) sound.play('jump');
+  if (event.code === bindings.jump && !event.repeat && started && game && !game.paused) sound.play('jump');
 });
+
+if (BENCH_MODE) {
+  $('screen').classList.remove('visible');
+  startNight(1);
+  started = true;
+}

@@ -35,7 +35,8 @@
         "game_over",
         {
           "result": "lost",
-          "reason": "no_flames"
+          "reason": "no_flames",
+          "score": 0
         }
       ]
     ],

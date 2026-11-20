@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Chế độ headless theo Test Contract v1.1.
-// node src/headless/cli.js --seed <int> --night 1 [--scenario f] [--inputs f]
+// Chế độ headless theo Test Contract v1.3 (tương thích CLI v1.0–v1.2).
+// node src/headless/cli.js --seed <int> --night <1|2|3> [--scenario f] [--inputs f]
 //                          --ticks <int> --out <file.jsonl> [--snapshot-every <int>]
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -30,6 +30,7 @@ function parseArgs(argv) {
     }
   }
   for (const k of ['seed', 'night', 'ticks', 'out']) if (opts[k] === undefined) throw new UsageError(`thiếu --${k}`);
+  if (opts.night < 1 || opts.night > 3) throw new UsageError('--night phải là 1, 2 hoặc 3');
   if (opts.ticks < 0) throw new UsageError('--ticks phải >= 0');
   if (opts.snapshotEvery < 1) throw new UsageError('--snapshot-every phải >= 1');
   return opts;
@@ -61,13 +62,15 @@ export function run(opts) {
   for (let k = 0; k < opts.ticks && game.state === 'playing'; k++) {
     const f = frames.get(k);
     if (f) {
-      for (const key of ['move', 'cam_yaw_deg', 'jump', 'dash', 'interact', 'pulse', 'pause']) if (f[key] !== undefined) cur[key] = f[key];
+      for (const key of ['move', 'cam_yaw_deg', 'jump', 'interact', 'pulse', 'dash', 'pause']) {
+        if (f[key] !== undefined) cur[key] = f[key];
+      }
     }
     game.step(cur);
     for (const e of game.drainEvents()) lines.push(JSON.stringify(e));
     if (game.tick % opts.snapshotEvery === 0) lines.push(JSON.stringify(game.snapshot()));
   }
-  lines.push(JSON.stringify({ type: 'end', ticks: game.tick, state: game.state, score: game.score }));
+  lines.push(JSON.stringify({ type: 'end', ticks: game.steps, state: game.state, score: game.score }));
 
   const out = resolve(opts.out);
   mkdirSync(dirname(out), { recursive: true });

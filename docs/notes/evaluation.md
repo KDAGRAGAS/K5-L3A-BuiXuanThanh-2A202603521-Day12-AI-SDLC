@@ -20,3 +20,11 @@
 - **Review độc lập:** reviewer phát hiện thiếu lá bay, tỷ lệ độ nhạy quá cao và thiếu scenario lịch mote/Gió Lạc; các điểm này đã được sửa, bổ sung bằng chứng và reviewer xác nhận không còn vấn đề chức năng.
 - **Giới hạn bằng chứng:** âm thanh đã được nối vào event game và cài đặt âm lượng, nhưng chưa có đo kiểm âm học. Chưa có kết quả CI hệ điều hành khác vì chưa push.
 - **Rủi ro còn lại:** mô phỏng địa hình chỉ dùng các mặt đảo/dốc/bục được mô tả trong ticket; vật trang trí không cản đường. Các lựa chọn chưa chốt được ghi trong `docs/notes/phase-2-assumptions.md`.
+
+## Phase 4 — Ticket-04 (đang thực hiện)
+
+- Đã triển khai Contract v1.3, benchmark, soak, leaderboard cục bộ và tùy chọn accessibility. Yêu cầu và kết quả chi tiết nằm tại [`phase-4-assumptions.md`](phase-4-assumptions.md).
+- `npm test`: 50/50 đạt. `PHASE=phase-4 npm run proof`: 22/22 scenario đạt; các thay đổi scenario do Ticket-03 thay luật có ghi tại [`phase-3-decisions.md`](phase-3-decisions.md).
+- Benchmark 30 giây: 385.5 FPS TB, P1 114.3 FPS, p95 5.4 ms, tải 986 ms, vsync tắt; `peak_mem_mb: null` vì Chrome không cấp RSS cho trang.
+- Soak 10 đêm theo lệnh contract: 0 crash, RSS 43.1 → 45.1 MiB (tăng khoảng 4.6%), đạt ngưỡng tăng tối đa 20%; năm lượt lặp cùng cấu hình đều dưới 5%.
+- Clone sạch từ commit chạy `npm install`, `npm test` (50/50), và server trả HTTP 200 cùng API leaderboard hợp lệ. Video có trong `docs/demo/` và README đã liên kết; thời lượng dưới 5 phút nhưng chưa xác nhận trong video có đủ test/headless/benchmark. Review độc lập không còn lỗi code. Còn thiếu ảnh UI đúng 1280×720 và tag/release.
