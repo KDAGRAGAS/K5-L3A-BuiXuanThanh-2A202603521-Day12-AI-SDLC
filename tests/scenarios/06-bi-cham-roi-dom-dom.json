@@ -1,0 +1,41 @@
+{
+  "requirement": "Bóng Mực chạm: mất 1 lửa, rơi floor(5*0.5)=2 đom đóm",
+  "seed": 1,
+  "ticks": 1,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "motes": [],
+    "shades": [
+      {
+        "id": "S1",
+        "pos": [
+          0.5,
+          1,
+          0
+        ]
+      }
+    ],
+    "player": {
+      "carried": 5
+    }
+  },
+  "expect": {
+    "events": [
+      [
+        1,
+        "player_hit",
+        {
+          "by": "shade",
+          "flames": 2,
+          "dropped": 2
+        }
+      ]
+    ],
+    "snapshot": [
+      1,
+      "player.carried",
+      3
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "requirement": "Hết thời gian đêm -> game_over lost/dawn đúng tick",
+  "seed": 1,
+  "ticks": 1000,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "motes": [],
+    "shades": [],
+    "time_left_s": 2
+  },
+  "expect": {
+    "events": [
+      [
+        120,
+        "game_over",
+        {
+          "result": "lost",
+          "reason": "dawn"
+        }
+      ]
+    ],
+    "end": {
+      "type": "end",
+      "ticks": 120,
+      "state": "lost",
+      "score": 0
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "requirement": "cam_yaw_deg = 90 biến move [0,1] thành hướng +X",
+  "seed": 1,
+  "ticks": 60,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "motes": [],
+    "shades": []
+  },
+  "expect": {
+    "events": [],
+    "snapshot": [
+      60,
+      "player.pos",
+      [
+        6,
+        0,
+        0
+      ]
+    ]
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "move": [
+          0,
+          1
+        ],
+        "cam_yaw_deg": 90
+      }
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Đảo Đèn Lồng</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #120b22; font-family: system-ui, sans-serif; color: #fde9c4; }
+    canvas { display: block; }
+    #hud { position: fixed; top: 12px; left: 12px; display: flex; gap: 10px; flex-wrap: wrap; pointer-events: none; }
+    .chip { background: rgba(20, 10, 40, .72); border: 1px solid rgba(255, 190, 110, .35); border-radius: 10px; padding: 6px 12px; font-size: 15px; }
+    .chip b { color: #ffc070; }
+    #hint { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 14px; opacity: .85; background: rgba(20,10,40,.6); padding: 6px 12px; border-radius: 10px; pointer-events: none; }
+    #prompt { position: fixed; top: 64%; left: 50%; transform: translateX(-50%); font-size: 18px; color: #ffd28a; text-shadow: 0 0 8px #000; pointer-events: none; }
+    #overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(10, 5, 25, .7); text-align: center; }
+    #overlay h1 { font-size: 46px; margin: 0 0 8px; color: #ffc070; }
+    #overlay p { font-size: 18px; margin: 4px; }
+    #start { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; background: rgba(10,5,25,.82); text-align: center; cursor: pointer; }
+    #start h1 { font-size: 52px; margin: 0; color: #ffc070; }
+    #start p { max-width: 560px; line-height: 1.5; }
+  </style>
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+</head>
+<body>
+  <div id="hud">
+    <div class="chip">Lửa <b id="flames"></b></div>
+    <div class="chip">Đom đóm <b id="carried"></b></div>
+    <div class="chip">Đèn <b id="lit"></b></div>
+    <div class="chip">Đêm còn <b id="time"></b></div>
+    <div class="chip">Điểm <b id="score"></b></div>
+    <div class="chip">Tỏa sáng <b id="pulse"></b></div>
+  </div>
+  <div id="prompt"></div>
+  <div id="hint">WASD di chuyển · kéo chuột / ← → xoay camera · Space nhảy · E nạp đèn · Q tỏa sáng · R chơi lại</div>
+  <div id="overlay"><h1 id="ovTitle"></h1><p id="ovReason"></p><p id="ovScore"></p><p>Bấm <b>R</b> để chơi lại</p></div>
+  <div id="start">
+    <h1>Đảo Đèn Lồng</h1>
+    <p>Đêm 1 – Đảo Bến. Sương đen đã nuốt ánh sáng của đảo. Hãy giúp Mây gom đom đóm, thắp lại 5 Đèn Lồng Lớn trước bình minh, và né Bóng Mực.</p>
+    <p><b>Bấm để bắt đầu</b></p>
+  </div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+{
+  "requirement": "Interact (cạnh lên) gần đèn: deposit rồi lantern_lit khi đủ 5 đom đóm",
+  "seed": 1,
+  "ticks": 30,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "motes": [],
+    "shades": [],
+    "player": {
+      "pos": [
+        0,
+        0,
+        23
+      ],
+      "carried": 5
+    }
+  },
+  "expect": {
+    "events": [
+      [
+        1,
+        "deposit",
+        {
+          "lantern_id": "L1",
+          "amount": 5,
+          "deposited": 5
+        }
+      ],
+      [
+        1,
+        "lantern_lit",
+        {
+          "lantern_id": "L1"
+        }
+      ]
+    ],
+    "end": {
+      "type": "end",
+      "ticks": 30,
+      "state": "playing",
+      "score": 100
+    }
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "interact": true
+      },
+      {
+        "tick": 1,
+        "interact": false
+      }
+    ]
+  }
+}

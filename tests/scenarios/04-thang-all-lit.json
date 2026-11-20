@@ -1,0 +1,80 @@
+{
+  "requirement": "Thắp đèn cuối cùng -> game_over won/all_lit, cộng thưởng thời gian và lửa",
+  "seed": 1,
+  "ticks": 100,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "motes": [],
+    "shades": [],
+    "player": {
+      "pos": [
+        0,
+        0,
+        23
+      ],
+      "carried": 5
+    },
+    "lanterns": [
+      {
+        "id": "L2",
+        "lit": true
+      },
+      {
+        "id": "L3",
+        "lit": true
+      },
+      {
+        "id": "L4",
+        "lit": true
+      },
+      {
+        "id": "L5",
+        "lit": true
+      }
+    ],
+    "time_left_s": 100
+  },
+  "expect": {
+    "events": [
+      [
+        11,
+        "deposit",
+        {
+          "lantern_id": "L1",
+          "amount": 5,
+          "deposited": 5
+        }
+      ],
+      [
+        11,
+        "lantern_lit",
+        {
+          "lantern_id": "L1"
+        }
+      ],
+      [
+        11,
+        "game_over",
+        {
+          "result": "won",
+          "reason": "all_lit"
+        }
+      ]
+    ],
+    "end": {
+      "type": "end",
+      "ticks": 11,
+      "state": "won",
+      "score": 448
+    }
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 10,
+        "interact": true
+      }
+    ]
+  }
+}

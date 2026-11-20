@@ -1,0 +1,63 @@
+{
+  "requirement": "Pulse tốn 1 đom đóm, choáng Bóng Mực trong 6 m, đẩy lùi 4 m",
+  "seed": 1,
+  "ticks": 1,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "motes": [],
+    "shades": [
+      {
+        "id": "S1",
+        "pos": [
+          3,
+          1,
+          0
+        ]
+      },
+      {
+        "id": "S2",
+        "pos": [
+          20,
+          1,
+          0
+        ]
+      }
+    ],
+    "player": {
+      "carried": 2
+    }
+  },
+  "expect": {
+    "events": [
+      [
+        1,
+        "pulse",
+        {
+          "stunned_ids": [
+            "S1"
+          ]
+        }
+      ]
+    ],
+    "end": {
+      "type": "end",
+      "ticks": 1,
+      "state": "playing",
+      "score": 5
+    },
+    "snapshot": [
+      1,
+      "shades.0.state",
+      "stunned"
+    ]
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "pulse": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "requirement": "Di chuyển theo move/cam_yaw (60 tick/s, 6 m/s) và nhặt đom đóm trong pickup_radius",
+  "seed": 1,
+  "ticks": 200,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "motes": [
+      [
+        0,
+        0,
+        5
+      ]
+    ],
+    "shades": []
+  },
+  "expect": {
+    "events": [
+      [
+        40,
+        "mote_picked",
+        {
+          "carried": 1
+        }
+      ]
+    ],
+    "end": {
+      "type": "end",
+      "ticks": 200,
+      "state": "playing",
+      "score": 10
+    },
+    "snapshot": [
+      120,
+      "player.pos",
+      [
+        0,
+        0,
+        12
+      ]
+    ]
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "move": [
+          0,
+          1
+        ],
+        "cam_yaw_deg": 0
+      },
+      {
+        "tick": 120,
+        "move": [
+          0,
+          0
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "requirement": "Hết lửa -> game_over lost/no_flames",
+  "seed": 1,
+  "ticks": 100,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "motes": [],
+    "shades": [
+      {
+        "pos": [
+          0,
+          1,
+          0.5
+        ]
+      }
+    ],
+    "player": {
+      "flames": 1
+    }
+  },
+  "expect": {
+    "events": [
+      [
+        1,
+        "player_hit",
+        {
+          "by": "shade",
+          "flames": 0,
+          "dropped": 0
+        }
+      ],
+      [
+        1,
+        "game_over",
+        {
+          "result": "lost",
+          "reason": "no_flames"
+        }
+      ]
+    ],
+    "end": {
+      "type": "end",
+      "ticks": 1,
+      "state": "lost",
+      "score": 0
+    }
+  }
+}

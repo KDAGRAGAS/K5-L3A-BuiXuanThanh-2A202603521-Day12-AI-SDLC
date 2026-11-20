@@ -1,0 +1,43 @@
+{
+  "requirement": "Bóng Mực không vào safe_radius quanh đèn đã thắp, người chơi đứng trong vùng không bị chạm",
+  "seed": 1,
+  "ticks": 600,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "motes": [],
+    "shades": [
+      {
+        "id": "S1",
+        "pos": [
+          0,
+          1,
+          10
+        ]
+      }
+    ],
+    "player": {
+      "pos": [
+        0,
+        0,
+        24
+      ]
+    },
+    "lanterns": [
+      {
+        "id": "L1",
+        "lit": true
+      }
+    ]
+  },
+  "expect": {
+    "events": [],
+    "end": {
+      "type": "end",
+      "ticks": 600,
+      "state": "playing",
+      "score": 0
+    }
+  },
+  "snapshot_every": 10
+}

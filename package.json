@@ -1,0 +1,16 @@
+{
+  "name": "dao-den-long",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Đảo Đèn Lồng - game 3D (Day 12 AI SDLC lab)",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "headless": "node src/headless/cli.js",
+    "test": "node --test",
+    "proof": "node scripts/proof.mjs",
+    "contract": "node scripts/gen-contract.mjs"
+  },
+  "license": "MIT"
+}
